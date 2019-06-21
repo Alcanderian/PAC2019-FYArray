@@ -1,6 +1,7 @@
 TARGET=FYArray.exe
 
 CXX=icpc
+CXXFLAGS=-O2 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g
 
 INCLUDE=../include
 
@@ -11,7 +12,7 @@ $(TARGET):$(OBJ)
 	cp $(TARGET) ../
 
 %.o:%.cpp
-	$(CXX) -I$(INCLUDE) -c $< -o $@ 
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE) -c $< -o $@ 
 
 .PHONY:clean
 clean:

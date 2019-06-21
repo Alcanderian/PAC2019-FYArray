@@ -273,7 +273,8 @@ int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d)
 		cout << "Error opening check file! ";
 		exit(1);
 	}
-    	for ( int i = 0; i < ni; ++ i )
+    	//for ( int i = 0; i < ni; ++ i )
+		for ( int i = 0; i < 2; ++ i )
 	{
     		for ( int j = 0; j < nj; ++ j )
 		{
