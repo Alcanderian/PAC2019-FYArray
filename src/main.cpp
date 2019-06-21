@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cmath>
+#include <cstring>
 #include "DataStruct_Array.h"
 #define F 2.2E3
 #define Time 1E6
@@ -231,6 +232,7 @@ int main()
 		}
 
 		Range M(mst,med);
+#define EXPANDED
 
 		dqdx_4d(I,J,K,M) = 0.0;
 		dqdy_4d(I,J,K,M) = 0.0;
@@ -244,11 +246,46 @@ int main()
 		RDouble3D worksy(IW,JW,KW,fortranArray);
 		RDouble3D worksz(IW,JW,KW,fortranArray);
 		RDouble3D workqm(IW,JW,KW,fortranArray);
-
+#ifdef EXPANDED
+		{
+			double* Pworksx = &worksx[0];
+			double* Pworksy = &worksy[0];
+			double* Pworksz = &worksz[0];
+			double* Pxfn = &xfn[0];
+			double* Pyfn = &yfn[0];
+			double* Pzfn = &zfn[0];
+			double* Parea = &area[0];
+			const int s0 = 1;
+			const int s1 = s0 * (ni + 3);
+			const int s2 = s1 * (nj + 3);
+			const int s3 = s2 * (nk + 3);
+			// printf("%d, %d, %d, %d\n", xfn.stride(0), xfn.stride(1), xfn.stride(2), xfn.stride(3));
+#define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
+#define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+#pragma ivdep
+					for(int i = 1; i <= ni+1; ++i) {
+						Pworksx[LOC3D(i,j,k)] = \
+							Pxfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
+							Pxfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
+						Pworksy[LOC3D(i,j,k)] = \
+							Pyfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
+							Pyfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
+						Pworksz[LOC3D(i,j,k)] = \
+							Pzfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
+							Pzfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
+					}
+				}
+			}
+#undef LOC3D
+#undef LOC4D
+		}
+#else
 		worksx(I,J,K) = xfn(I,J,K,ns1) * area(I,J,K,ns1) + xfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
 		worksy(I,J,K) = yfn(I,J,K,ns1) * area(I,J,K,ns1) + yfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
 		worksz(I,J,K) = zfn(I,J,K,ns1) * area(I,J,K,ns1) + zfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-
+#endif
 		for ( int m = mst; m <= med; ++ m )
 		{
 			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
