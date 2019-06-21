@@ -1,0 +1,1 @@
+source /opt/intel/parallel_studio_xe_2018.1.038/psxevars.sh
