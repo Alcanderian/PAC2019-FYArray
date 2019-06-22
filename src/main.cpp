@@ -57,21 +57,20 @@ int main()
 			}
 		}
 	}
-	
 
 	// 申请变量空间
 	I = Range(-1,ni+1);
 	J = Range(-1,nj+1);
-        K = Range(-1,nk+1);
-        Range D(1,3);
+	K = Range(-1,nk+1);
+	Range D(1,3);
 	RDouble4D xfn (I,J,K,D,fortranArray);  // 网格单元↙左下面法向，D为方向
 	RDouble4D yfn (I,J,K,D,fortranArray);
 	RDouble4D zfn (I,J,K,D,fortranArray);
 	RDouble4D area(I,J,K,D,fortranArray);  // 网格单元↙左下面面积
 	RDouble3D vol (I,J,K,  fortranArray);  // 网格单元体积
 
-        Range M(0,3); // 4个变量：速度u、v、w，温度T
-        RDouble4D q_4d(I,J,K,M,fortranArray); // 存储流场量，位置在单元中心
+	Range M(0,3); // 4个变量：速度u、v、w，温度T
+	RDouble4D q_4d(I,J,K,M,fortranArray); // 存储流场量，位置在单元中心
 	RDouble4D dqdx_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏x
 	RDouble4D dqdy_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏y
 	RDouble4D dqdz_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏z
@@ -114,6 +113,7 @@ int main()
 			}
 		}
 	}
+	printf("init finished\n");
 	start=rdtsc();
 	//以上为数据初始化部分，不可修改！
 	// --------------------------------------------------------------------
@@ -123,17 +123,32 @@ int main()
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
 
+	Range I0(1,ni);
+	Range J0(1,nj);
+	Range K0(1,nk);
+
+	RDouble3D worksx(I,J,K,fortranArray);
+	RDouble3D worksy(I,J,K,fortranArray);
+	RDouble3D worksz(I,J,K,fortranArray);
+	RDouble3D workqm(I,J,K,fortranArray);
+
+	const RDouble4D& xfn_const_ref = xfn;
+	const RDouble4D& yfn_const_ref = yfn;
+	const RDouble4D& zfn_const_ref = zfn;
+	const RDouble4D& area_const_ref = area;
+	const RDouble3D& vol_const_ref = vol;
+
+	const RDouble4D& q_4d_const_ref = q_4d;
+
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
 		Range I(1,ni+1);
 		Range J(1,nj+1);
 		Range K(1,nk+1);
 
-		int index[] = {1,2,3,1,2};
-
 		int ns1 = nsurf;
-		int ns2 = index[nsurf  ];
-		int ns3 = index[nsurf+1];
+		int ns2 = (nsurf + 1 - 1) % THREE_D + 1;
+		int ns3 = (nsurf + 2 - 1) % THREE_D + 1;
 
 		int il1 = 0;
 		int il2 = 0;
@@ -164,84 +179,60 @@ int main()
 			jl3 = 1;
 		}
 
-		Range M(mst,med);
-
-		dqdx_4d(I,J,K,M) = 0.0;
-		dqdy_4d(I,J,K,M) = 0.0;
-		dqdz_4d(I,J,K,M) = 0.0;
-
-		Range IW(-1,ni+1);
-		Range JW(-1,nj+1);
-		Range KW(-1,nk+1);
-
-		RDouble3D worksx(IW,JW,KW,fortranArray);
-		RDouble3D worksy(IW,JW,KW,fortranArray);
-		RDouble3D worksz(IW,JW,KW,fortranArray);
-		RDouble3D workqm(IW,JW,KW,fortranArray);
-
-		worksx(I,J,K) = xfn(I,J,K,ns1) * area(I,J,K,ns1) + xfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-		worksy(I,J,K) = yfn(I,J,K,ns1) * area(I,J,K,ns1) + yfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-		worksz(I,J,K) = zfn(I,J,K,ns1) * area(I,J,K,ns1) + zfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
+		// works
+		worksx(I,J,K) = xfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
+		worksy(I,J,K) = yfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
+		worksz(I,J,K) = zfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
+			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 		}
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdy_4d(I-il1,J-jl1,K-kl1,m) += worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdz_4d(I-il1,J-jl1,K-kl1,m) += worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
+			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdy_4d(I-il1,J-jl1,K-kl1,m) += worksy(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdz_4d(I-il1,J-jl1,K-kl1,m) += worksz(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 		}
 
-		if ( ( nsurf != 2 ) || ( nDim != TWO_D ) )
+		worksx(I,J,K) = xfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
+		worksy(I,J,K) = yfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
+		worksz(I,J,K) = zfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
+
+		for ( int m = mst; m <= med; ++ m )
 		{
-			worksx(I,J,K) = xfn(I,J,K,ns2) * area(I,J,K,ns2) + xfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
-			worksy(I,J,K) = yfn(I,J,K,ns2) * area(I,J,K,ns2) + yfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
-			worksz(I,J,K) = zfn(I,J,K,ns2) * area(I,J,K,ns2) + zfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
+			workqm(I,J,K) = fourth * ( q_4d_const_ref(I,J,K,m) + q_4d_const_ref(I-il1,J-jl1,K-kl1,m) + q_4d_const_ref(I-il2,J-jl2,K-kl2,m) + q_4d_const_ref(I-il1-il2,J-jl1-jl2,K-kl1-kl2,m) );
 
-			for ( int m = mst; m <= med; ++ m )
-			{
-				workqm(I,J,K) = fourth * ( q_4d(I,J,K,m) + q_4d(I-il1,J-jl1,K-kl1,m) + q_4d(I-il2,J-jl2,K-kl2,m) + q_4d(I-il1-il2,J-jl1-jl2,K-kl1-kl2,m) );
+			dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
+			dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
+			dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
 
-				dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
-
-				dqdx_4d(I-il2,J-jl2,K-kl2,m) += worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I-il2,J-jl2,K-kl2,m) += worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I-il2,J-jl2,K-kl2,m) += worksz(I,J,K) * workqm(I,J,K);
-			}
+			dqdx_4d(I-il2,J-jl2,K-kl2,m) += worksx(I,J,K) * workqm(I,J,K);
+			dqdy_4d(I-il2,J-jl2,K-kl2,m) += worksy(I,J,K) * workqm(I,J,K);
+			dqdz_4d(I-il2,J-jl2,K-kl2,m) += worksz(I,J,K) * workqm(I,J,K);
 		}
 
-		if ( ( nsurf != 1 ) || ( nDim != TWO_D ) )
+		worksx(I,J,K) = xfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
+		worksy(I,J,K) = yfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
+		worksz(I,J,K) = zfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
+
+		for ( int m = mst; m <= med; ++ m )
 		{
-			worksx(I,J,K) = xfn(I,J,K,ns3) * area(I,J,K,ns3) + xfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
-			worksy(I,J,K) = yfn(I,J,K,ns3) * area(I,J,K,ns3) + yfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
-			worksz(I,J,K) = zfn(I,J,K,ns3) * area(I,J,K,ns3) + zfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
+			workqm(I,J,K) = fourth * ( q_4d_const_ref(I,J,K,m) + q_4d_const_ref(I-il1,J-jl1,K-kl1,m) + q_4d_const_ref(I-il3,J-jl3,K-kl3,m) + q_4d_const_ref(I-il1-il3,J-jl1-jl3,K-kl1-kl3,m) );
 
-			for ( int m = mst; m <= med; ++ m )
-			{
-				workqm(I,J,K) = fourth * ( q_4d(I,J,K,m) + q_4d(I-il1,J-jl1,K-kl1,m) + q_4d(I-il3,J-jl3,K-kl3,m) + q_4d(I-il1-il3,J-jl1-jl3,K-kl1-kl3,m) );
+			dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
+			dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
+			dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
 
-				dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
-
-				dqdx_4d(I-il3,J-jl3,K-kl3,m) += worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I-il3,J-jl3,K-kl3,m) += worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I-il3,J-jl3,K-kl3,m) += worksz(I,J,K) * workqm(I,J,K);
-			}
+			dqdx_4d(I-il3,J-jl3,K-kl3,m) += worksx(I,J,K) * workqm(I,J,K);
+			dqdy_4d(I-il3,J-jl3,K-kl3,m) += worksy(I,J,K) * workqm(I,J,K);
+			dqdz_4d(I-il3,J-jl3,K-kl3,m) += worksz(I,J,K) * workqm(I,J,K);
 		}
 
-		Range I0(1,ni);
-		Range J0(1,nj);
-		Range K0(1,nk);
-
-		workqm(I0,J0,K0) = 1.0 / (  vol(I0, J0, K0) + vol(I0-il1, J0-jl1, K0-kl1) );
+		workqm(I0,J0,K0) = 1.0 / (  vol_const_ref(I0, J0, K0) + vol_const_ref(I0-il1, J0-jl1, K0-kl1) );
 
 		for ( int m = mst; m <= med; ++ m )
 		{
@@ -273,7 +264,7 @@ int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d)
 		cout << "Error opening check file! ";
 		exit(1);
 	}
-    	//for ( int i = 0; i < ni; ++ i )
+    	// for ( int i = 0; i < ni; ++ i )
 		for ( int i = 0; i < 2; ++ i )
 	{
     		for ( int j = 0; j < nj; ++ j )
