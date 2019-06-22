@@ -123,6 +123,7 @@ int main()
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
 
+	{
 	Range I0(1,ni);
 	Range J0(1,nj);
 	Range K0(1,nk);
@@ -139,6 +140,13 @@ int main()
 	const RDouble3D& vol_const_ref = vol;
 
 	const RDouble4D& q_4d_const_ref = q_4d;
+
+	RDouble4D xfn_area_mul(I,J,K,D,fortranArray);
+	RDouble4D yfn_area_mul(I,J,K,D,fortranArray);
+	RDouble4D zfn_area_mul(I,J,K,D,fortranArray);
+	xfn_area_mul(I,J,K,D) = xfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
 
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
@@ -179,61 +187,77 @@ int main()
 			jl3 = 1;
 		}
 
-		// works
-		worksx(I,J,K) = xfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
-		worksy(I,J,K) = yfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
-		worksz(I,J,K) = zfn_const_ref(I,J,K,ns1) * area_const_ref(I,J,K,ns1) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns1) * area_const_ref(I-il1,J-jl1,K-kl1,ns1);
+		// part 1, step 1
+		worksx(I,J,K) = xfn_area_mul(I,J,K,ns1) + xfn_area_mul(I-il1,J-jl1,K-kl1,ns1);
+		worksy(I,J,K) = yfn_area_mul(I,J,K,ns1) + yfn_area_mul(I-il1,J-jl1,K-kl1,ns1);
+		worksz(I,J,K) = zfn_area_mul(I,J,K,ns1) + zfn_area_mul(I-il1,J-jl1,K-kl1,ns1);
 
+		// part 1, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);  // identical
 			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 		}
 
+		// part 1, step 3
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
+			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);  // identical
 			dqdy_4d(I-il1,J-jl1,K-kl1,m) += worksy(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 			dqdz_4d(I-il1,J-jl1,K-kl1,m) += worksz(I,J,K) * q_4d_const_ref(I-il1,J-jl1,K-kl1,m);
 		}
 
-		worksx(I,J,K) = xfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
-		worksy(I,J,K) = yfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
-		worksz(I,J,K) = zfn_const_ref(I,J,K,ns2) * area_const_ref(I,J,K,ns2) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns2) * area_const_ref(I-il1,J-jl1,K-kl1,ns2);
+		// part 2, step 1
+		worksx(I,J,K) = xfn_area_mul(I,J,K,ns2) + xfn_area_mul(I-il1,J-jl1,K-kl1,ns2);
+		worksy(I,J,K) = yfn_area_mul(I,J,K,ns2) + yfn_area_mul(I-il1,J-jl1,K-kl1,ns2);
+		worksz(I,J,K) = zfn_area_mul(I,J,K,ns2) + zfn_area_mul(I-il1,J-jl1,K-kl1,ns2);
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			workqm(I,J,K) = fourth * ( q_4d_const_ref(I,J,K,m) + q_4d_const_ref(I-il1,J-jl1,K-kl1,m) + q_4d_const_ref(I-il2,J-jl2,K-kl2,m) + q_4d_const_ref(I-il1-il2,J-jl1-jl2,K-kl1-kl2,m) );
+			workqm(I,J,K) = fourth * ( q_4d_const_ref(I,J,K,m) +							// conv minus:
+									   q_4d_const_ref(I-il1,J-jl1,K-kl1,m) +				// [1, 0, 0], [0, 1, 0], [0, 0, 1]
+									   q_4d_const_ref(I-il2,J-jl2,K-kl2,m) +				// [0, 1, 0], [0, 0, 1], [1, 0, 0]
+									   q_4d_const_ref(I-il1-il2,J-jl1-jl2,K-kl1-kl2,m) );	// [1, 1, 0], [0, 1, 1], [1, 0, 1]
 
+			// part 2, step 2
 			dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
 			dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
 			dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
 
+			// part 2, step 3
 			dqdx_4d(I-il2,J-jl2,K-kl2,m) += worksx(I,J,K) * workqm(I,J,K);
 			dqdy_4d(I-il2,J-jl2,K-kl2,m) += worksy(I,J,K) * workqm(I,J,K);
 			dqdz_4d(I-il2,J-jl2,K-kl2,m) += worksz(I,J,K) * workqm(I,J,K);
 		}
 
-		worksx(I,J,K) = xfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + xfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
-		worksy(I,J,K) = yfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + yfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
-		worksz(I,J,K) = zfn_const_ref(I,J,K,ns3) * area_const_ref(I,J,K,ns3) + zfn_const_ref(I-il1,J-jl1,K-kl1,ns3) * area_const_ref(I-il1,J-jl1,K-kl1,ns3);
+		// part 3, step 1
+		worksx(I,J,K) = xfn_area_mul(I,J,K,ns3) + xfn_area_mul(I-il1,J-jl1,K-kl1,ns3);
+		worksy(I,J,K) = yfn_area_mul(I,J,K,ns3) + yfn_area_mul(I-il1,J-jl1,K-kl1,ns3);
+		worksz(I,J,K) = zfn_area_mul(I,J,K,ns3) + zfn_area_mul(I-il1,J-jl1,K-kl1,ns3);
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			workqm(I,J,K) = fourth * ( q_4d_const_ref(I,J,K,m) + q_4d_const_ref(I-il1,J-jl1,K-kl1,m) + q_4d_const_ref(I-il3,J-jl3,K-kl3,m) + q_4d_const_ref(I-il1-il3,J-jl1-jl3,K-kl1-kl3,m) );
+			workqm(I,J,K) = fourth * ( 	q_4d_const_ref(I,J,K,m) +							// conv minus:
+										q_4d_const_ref(I-il1,J-jl1,K-kl1,m) +				// [1, 0, 0], [0, 1, 0], [0, 0, 1]
+										q_4d_const_ref(I-il3,J-jl3,K-kl3,m) +				// [0, 0, 1], [1, 0, 0], [0, 1, 0]
+										q_4d_const_ref(I-il1-il3,J-jl1-jl3,K-kl1-kl3,m) );	// [1, 0, 1], [1, 1, 0], [0, 1, 1]
 
+			// part 3, step 2
 			dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
 			dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
 			dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
 
+			// part 3, step 3
 			dqdx_4d(I-il3,J-jl3,K-kl3,m) += worksx(I,J,K) * workqm(I,J,K);
 			dqdy_4d(I-il3,J-jl3,K-kl3,m) += worksy(I,J,K) * workqm(I,J,K);
 			dqdz_4d(I-il3,J-jl3,K-kl3,m) += worksz(I,J,K) * workqm(I,J,K);
 		}
 
+		// part 4, step 1
 		workqm(I0,J0,K0) = 1.0 / (  vol_const_ref(I0, J0, K0) + vol_const_ref(I0-il1, J0-jl1, K0-kl1) );
 
+		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
 			dqdx_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
@@ -243,6 +267,7 @@ int main()
 
 	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
 	
+	}
 	}
 	//----------------------------------------------------
 	//以下为正确性对比部分，不可修改！
@@ -264,15 +289,16 @@ int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d)
 		cout << "Error opening check file! ";
 		exit(1);
 	}
-    	// for ( int i = 0; i < ni; ++ i )
-		for ( int i = 0; i < 2; ++ i )
+		// #pragma omp parallel for
+		for ( int i = 0; i < ni; ++ i )
+		// for ( int i = 0; i < 2; ++ i )
 	{
-    		for ( int j = 0; j < nj; ++ j )
+			for ( int j = 0; j < nj; ++ j )
 		{
 			for ( int k = 0; k < nk; ++ k )
-    			{
+				{
 				for (int m = 0; m < 3; ++ m)
-    				{
+					{
 					file.read(reinterpret_cast<char*>(&tmp), sizeof(double));
 					if(fabs(dqdx_4d(i,j,k,m) - tmp) > 1e-6)
 					{
