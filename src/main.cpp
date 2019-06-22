@@ -315,7 +315,10 @@ int main()
 							PyPyS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
 							PzPzS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
-							
+					}
+#pragma ivdep
+#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {							
 						RDouble temp0 = fourth * ( \
 							Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[LOC4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
@@ -333,7 +336,10 @@ int main()
 							PyPyS[MLOC4D(i,j,k,ns2)] * temp0;
 						Pdqdz_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
 							PzPzS[MLOC4D(i,j,k,ns2)] * temp0;
-						
+					}
+#pragma ivdep
+#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {
 						RDouble temp1 = fourth * ( \
 							Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[LOC4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
