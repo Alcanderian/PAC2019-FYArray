@@ -200,6 +200,7 @@ int main()
 #endif
 
 #ifdef EXPANDED
+#ifdef NO_USE_WTF
 		for ( int m = mst; m <= med; ++ m ) {
 #pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
@@ -207,12 +208,13 @@ int main()
 #pragma ivdep
 					for(int i = 1; i <= ni+1; ++i) {
 						Pdqdx_4d[LOC4D(i,j,k,m)] = 0.0;
-						Pdqdx_4d[LOC4D(i,j,k,m)] = 0.0;
-						Pdqdx_4d[LOC4D(i,j,k,m)] = 0.0;
+						Pdqdy_4d[LOC4D(i,j,k,m)] = 0.0;
+						Pdqdz_4d[LOC4D(i,j,k,m)] = 0.0;
 					}
 				}
 			}
 		}
+#endif
 #else
 		dqdx_4d(I,J,K,M) = 0.0;
 		dqdy_4d(I,J,K,M) = 0.0;
