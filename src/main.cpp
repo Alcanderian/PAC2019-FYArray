@@ -133,13 +133,6 @@ int main()
 	RDouble4D xfn_area_mul(I,J,K,D,fortranArray);
 	RDouble4D yfn_area_mul(I,J,K,D,fortranArray);
 	RDouble4D zfn_area_mul(I,J,K,D,fortranArray);
-	xfn_area_mul(I,J,K,D) = xfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
-	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
-	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
-
-	RDouble4D* x_dim_sums[2][2][2];
-	RDouble4D* y_dim_sums[2][2][2];
-	RDouble4D* z_dim_sums[2][2][2];
 	RDouble4D xmul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim1_sum(I_,J_,K_,D,fortranArray);
@@ -149,6 +142,25 @@ int main()
 	RDouble4D xmul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim3_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D q_4d_xy_conv(I_, J_, K_, M, fortranArray);
+	RDouble4D q_4d_yz_conv(I_, J_, K_, M, fortranArray);
+	RDouble4D q_4d_xz_conv(I_, J_, K_, M, fortranArray);
+	RDouble3D rev_vol_sum_dim1(I0, J0, K0, fortranArray);
+	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
+	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
+
+	end=rdtsc();
+	elapsed= (end - start)/(F*Time);
+	cout<<"The allocation elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
+
+
+	xfn_area_mul(I,J,K,D) = xfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+
+	RDouble4D* x_dim_sums[2][2][2];
+	RDouble4D* y_dim_sums[2][2][2];
+	RDouble4D* z_dim_sums[2][2][2];
 	xmul_dim1_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_-1,J_,K_,D);
 	ymul_dim1_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_-1,J_,K_,D);
 	zmul_dim1_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_-1,J_,K_,D);
@@ -168,9 +180,6 @@ int main()
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
 
-	RDouble4D q_4d_xy_conv(I_, J_, K_, M, fortranArray);
-	RDouble4D q_4d_yz_conv(I_, J_, K_, M, fortranArray);
-	RDouble4D q_4d_xz_conv(I_, J_, K_, M, fortranArray);
 	// this can also be optimized
 	q_4d_xy_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_ - 1, J_ - 1, K_, M));
 	q_4d_yz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_, J_ - 1, K_ - 1, M));
@@ -180,9 +189,6 @@ int main()
 	q_4d_convs[0][1][1] = &q_4d_yz_conv;
 	q_4d_convs[1][0][1] = &q_4d_xz_conv;
 
-	RDouble3D rev_vol_sum_dim1(I0, J0, K0, fortranArray);
-	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
-	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
 	rev_vol_sum_dim1(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0 - 1, J0, K0));
 	rev_vol_sum_dim2(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0 - 1, K0));
 	rev_vol_sum_dim3(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0, K0 - 1));
