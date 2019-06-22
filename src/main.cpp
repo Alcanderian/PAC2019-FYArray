@@ -196,6 +196,10 @@ int main()
 	RDouble3D worksz(I_,J_,K_,fortranArray);
 	RDouble3D workqm(I_,J_,K_,fortranArray);
 
+	end=rdtsc();
+	elapsed= (end - start)/(F*Time);
+	cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
+
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
 		int ns1 = nsurf;
