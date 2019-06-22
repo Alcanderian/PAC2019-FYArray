@@ -123,75 +123,18 @@ int main()
 	// 希望参赛队伍在理解该算法的基础上，实现更高效的界面梯度求解，提升程序执行效率
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
-
-#define ARRAY_TEST
-#undef ARRAY_TEST
-#ifdef ARRAY_TEST
-	{
-		printf("[fortranArray]\n");
-		RDouble3D ftest(3, 4, 1, fortranArray);
-		int fnnn = 0;
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				ftest(i, j, 0) = (double)(++fnnn);
-			}
-		}
-
-		double *Pftest = &ftest[0]; // to get the correct pointer
-		printf("shape: 3, 4, 1\n");
-		printf("stride: %d, %d, %d\n", ftest.stride(0), ftest.stride(1), ftest.stride(2));
-		printf("j * 3 + i: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pftest[j * 3 + i]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-		printf("i * 4 + j: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pftest[i * 4 + j]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-
-		printf("[cArray]\n");
-		RDouble3D ctest(3, 4, 1);
-		int cnnn = 0;
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				ctest(i, j, 0) = (double)(++cnnn);
-			}
-		}
-
-		double *Pctest = &ctest[0]; // to get the correct pointer
-		printf("shape: 3, 4, 1\n");
-		printf("stride: %d, %d, %d\n", ctest.stride(0), ctest.stride(1), ctest.stride(2));
-		printf("j * 3 + i: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pctest[j * 3 + i]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-		printf("i * 4 + j: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pctest[i * 4 + j]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-
-		exit(0);
-	}
-#endif
+	RDouble3D worksx(I,J,K,fortranArray);
+	RDouble3D worksy(I,J,K,fortranArray);
+	RDouble3D worksz(I,J,K,fortranArray);
+	RDouble3D workqm(I,J,K,fortranArray);
 
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
+#define EXPANDED
+#ifdef EXPANDED
+#pragma omp parallel
+{
+#endif
 #define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 #define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 		Range I(1,ni+1);
@@ -234,16 +177,6 @@ int main()
 		}
 
 		Range M(mst,med);
-#define EXPANDED
-
-		Range IW(-1,ni+1);
-		Range JW(-1,nj+1);
-		Range KW(-1,nk+1);
-
-		RDouble3D worksx(IW,JW,KW,fortranArray);
-		RDouble3D worksy(IW,JW,KW,fortranArray);
-		RDouble3D worksz(IW,JW,KW,fortranArray);
-		RDouble3D workqm(IW,JW,KW,fortranArray);
 
 #ifdef EXPANDED
 		double* Pworksx = &worksx[0];
@@ -253,12 +186,12 @@ int main()
 		double* Pdqdx_4d = &dqdx_4d[0];
 		double* Pdqdy_4d = &dqdy_4d[0];
 		double* Pdqdz_4d = &dqdz_4d[0];
-		double* Pxfn = &xfn[0];
-		double* Pyfn = &yfn[0];
-		double* Pzfn = &zfn[0];
-		double* Parea = &area[0];
-		double* Pq_4d = &q_4d[0];
-		double* Pvol = &vol[0];
+		const double* Pxfn = &xfn[0];
+		const double* Pyfn = &yfn[0];
+		const double* Pzfn = &zfn[0];
+		const double* Parea = &area[0];
+		const double* Pq_4d = &q_4d[0];
+		const double* Pvol = &vol[0];
 
 		const int s0 = 1;
 		const int s1 = s0 * (ni + 3);
@@ -268,6 +201,7 @@ int main()
 
 #ifdef EXPANDED
 		for ( int m = mst; m <= med; ++ m ) {
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -286,6 +220,7 @@ int main()
 #endif
 
 #ifdef EXPANDED
+#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -310,6 +245,7 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -333,6 +269,7 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -356,6 +293,7 @@ int main()
 		if ( ( nsurf != 2 ) || ( nDim != TWO_D ) )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -381,27 +319,28 @@ int main()
 			for ( int m = mst; m <= med; ++ m )
 			{
 #ifdef EXPANDED
+#pragma omp for
 				for(int k = 1; k <= nk+1; ++k) {
 					for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 						for(int i = 1; i <= ni+1; ++i) {
-							Pworkqm[LOC3D(i,j,k)] = fourth * ( \
+							double temp = fourth * ( \
 								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 								Pq_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[LOC4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
 
 							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 
 							Pdqdx_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 						}
 					}
 				}
@@ -422,6 +361,7 @@ int main()
 		if ( ( nsurf != 1 ) || ( nDim != TWO_D ) )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -447,27 +387,28 @@ int main()
 			for ( int m = mst; m <= med; ++ m )
 			{
 #ifdef EXPANDED
+#pragma omp for
 				for(int k = 1; k <= nk+1; ++k) {
 					for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 						for(int i = 1; i <= ni+1; ++i) {
-							Pworkqm[LOC3D(i,j,k)] = fourth * ( \
+							double temp = fourth * ( \
 								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 								Pq_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[LOC4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
 
 							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 
 							Pdqdx_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \	
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 						}
 					}
 				}
@@ -490,14 +431,6 @@ int main()
 		Range K0(1,nk);
 
 #ifdef EXPANDED
-		for(int k = 1; k <= nk; ++k) {
-			for(int j = 1; j <= nj; ++j) {
-#pragma ivdep
-				for(int i = 1; i <= ni; ++i) {
-					Pworkqm[LOC3D(i,j,k)] = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
-				}
-			}
-		}
 #else
 		workqm(I0,J0,K0) = 1.0 / (  vol(I0, J0, K0) + vol(I0-il1, J0-jl1, K0-kl1) );
 #endif
@@ -505,13 +438,15 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 #pragma ivdep
 					for(int i = 1; i <= ni; ++i) {
-						Pdqdx_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
-						Pdqdy_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
-						Pdqdz_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
+						double temp = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
+						Pdqdx_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdy_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdz_4d[LOC4D(i,j,k,m)] *= temp;
 					}
 				}
 			}
@@ -521,7 +456,9 @@ int main()
 			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
 #endif
 		}
-
+#ifdef EXPANDED
+}
+#endif
 	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
 #undef LOC3D
 #undef LOC4D
