@@ -1,14 +1,15 @@
 TARGET=FYArray.exe
 
 CXX=icpc
-CXXFLAGS=-O2 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g
+CXXFLAGS=-O3 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g -qopenmp
+LDFLAGS=-qopenmp
 
 INCLUDE=../include
 
 OBJ=FYStorage.o main.o
 
 $(TARGET):$(OBJ)
-	$(CXX) $^ -o $@ 
+	$(CXX) $(LDFLAGS) $^ -o $@ 
 	cp $(TARGET) ../
 
 %.o:%.cpp
