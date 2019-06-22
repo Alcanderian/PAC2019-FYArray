@@ -149,9 +149,9 @@ int main()
 
 	const RDouble4D& q_4d_const_ref = q_4d;
 
-	RDouble4D xfn_area_mul(I,J,K,D,fortranArray);
-	RDouble4D yfn_area_mul(I,J,K,D,fortranArray);
-	RDouble4D zfn_area_mul(I,J,K,D,fortranArray);
+	RDouble3D xfn_area_mul(I,J,K,fortranArray);
+	RDouble3D yfn_area_mul(I,J,K,fortranArray);
+	RDouble3D zfn_area_mul(I,J,K,fortranArray);
 	RDouble4D xmul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim1_sum(I_,J_,K_,D,fortranArray);
@@ -180,9 +180,6 @@ int main()
 
 	cout << D.first() << " " << D.last() << endl;
 
-	double* Pxfn_area_mul = &xfn_area_mul[0];
-	double* Pyfn_area_mul = &yfn_area_mul[0];
-	double* Pzfn_area_mul = &zfn_area_mul[0];
 	double* Pxmul_dim1_sum = &xmul_dim1_sum[0];
 	double* Pymul_dim1_sum = &ymul_dim1_sum[0];
 	double* Pzmul_dim1_sum = &zmul_dim1_sum[0];
@@ -228,30 +225,22 @@ int main()
 	for ( int d = D.first(); d <= D.last(); ++ d )
 	{
 		#pragma omp for
-		for(int k = 0; k <= nk+1; ++k) {
-			for(int j = 0; j <= nj+1; ++j) {
-				#pragma ivdep
-				for(int i = 0; i <= ni+1; ++i) {
-					Pxfn_area_mul[A4D(i,j,k,d)] = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					Pyfn_area_mul[A4D(i,j,k,d)] = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					Pzfn_area_mul[A4D(i,j,k,d)] = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-				}
-			}
-		}
-		#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 				#pragma ivdep
 				for(int i = 1; i <= ni+1; ++i) {
-					Pxmul_dim1_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i-1,j,k,d)];
-					Pymul_dim1_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i-1,j,k,d)];
-					Pzmul_dim1_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i-1,j,k,d)];
-					Pxmul_dim2_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i,j-1,k,d)];
-					Pymul_dim2_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i,j-1,k,d)];
-					Pzmul_dim2_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i,j-1,k,d)];
-					Pxmul_dim3_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i,j,k-1,d)];
-					Pymul_dim3_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i,j,k-1,d)];
-					Pzmul_dim3_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i,j,k-1,d)];
+					double tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					double tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					double tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					Pymul_dim1_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					Pzmul_dim1_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					Pxmul_dim2_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					Pymul_dim2_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					Pzmul_dim2_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					Pxmul_dim3_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					Pymul_dim3_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					Pzmul_dim3_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
 				}
 			}
 		}
@@ -290,7 +279,6 @@ int main()
 		cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
 	}
 
-	// #pragma omp parallel
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
 		int ns1 = nsurf;
