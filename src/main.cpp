@@ -127,14 +127,14 @@ int main()
 	RDouble3D worksy(I,J,K,fortranArray);
 	RDouble3D worksz(I,J,K,fortranArray);
 	RDouble3D workqm(I,J,K,fortranArray);
-
-	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
-	{
 #define EXPANDED
 #ifdef EXPANDED
 #pragma omp parallel
 {
 #endif
+	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
+	{
+
 #define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 #define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 		Range I(1,ni+1);
@@ -456,13 +456,13 @@ int main()
 			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
 #endif
 		}
-#ifdef EXPANDED
-}
-#endif
 	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
 #undef LOC3D
 #undef LOC4D
 	}
+#ifdef EXPANDED
+}
+#endif
 	//----------------------------------------------------
 	//以下为正确性对比部分，不可修改！
 	//----------------------------------------------------
