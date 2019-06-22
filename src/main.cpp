@@ -134,6 +134,39 @@ int main()
 	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
 	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
 
+	RDouble4D xmul_dim1_sum(I,J,K,D,fortranArray);
+	RDouble4D ymul_dim1_sum(I,J,K,D,fortranArray);
+	RDouble4D zmul_dim1_sum(I,J,K,D,fortranArray);
+	RDouble4D xmul_dim2_sum(I,J,K,D,fortranArray);
+	RDouble4D ymul_dim2_sum(I,J,K,D,fortranArray);
+	RDouble4D zmul_dim2_sum(I,J,K,D,fortranArray);
+	RDouble4D xmul_dim3_sum(I,J,K,D,fortranArray);
+	RDouble4D ymul_dim3_sum(I,J,K,D,fortranArray);
+	RDouble4D zmul_dim3_sum(I,J,K,D,fortranArray);
+	xmul_dim1_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I-1,J,K,D);
+	ymul_dim1_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I-1,J,K,D);
+	zmul_dim1_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I-1,J,K,D);
+	xmul_dim2_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I,J-1,K,D);
+	ymul_dim2_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I,J-1,K,D);
+	zmul_dim2_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I,J-1,K,D);
+	xmul_dim3_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I,J,K-1,D);
+	ymul_dim3_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I,J,K-1,D);
+	zmul_dim3_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I,J,K-1,D);
+
+	RDouble4D* x_dim_sums[2][2][2];
+	RDouble4D* y_dim_sums[2][2][2];
+	RDouble4D* z_dim_sums[2][2][2];
+
+	x_dim_sums[1][0][0] = &xmul_dim1_sum;
+	x_dim_sums[0][1][0] = &xmul_dim2_sum;
+	x_dim_sums[0][0][1] = &xmul_dim3_sum;
+	y_dim_sums[1][0][0] = &ymul_dim1_sum;
+	y_dim_sums[0][1][0] = &ymul_dim2_sum;
+	y_dim_sums[0][0][1] = &ymul_dim3_sum;
+	z_dim_sums[1][0][0] = &zmul_dim1_sum;
+	z_dim_sums[0][1][0] = &zmul_dim2_sum;
+	z_dim_sums[0][0][1] = &zmul_dim3_sum;
+
 	Range I_(1,ni+1);
 	Range J_(1,nj+1);
 	Range K_(1,nk+1);
@@ -179,9 +212,9 @@ int main()
 		}
 
 		// part 1, step 1
-		worksx(I_,J_,K_) = xfn_area_mul(I_,J_,K_,ns1) + xfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns1);
-		worksy(I_,J_,K_) = yfn_area_mul(I_,J_,K_,ns1) + yfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns1);
-		worksz(I_,J_,K_) = zfn_area_mul(I_,J_,K_,ns1) + zfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns1);
+		worksx(I_,J_,K_) = (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns1);
+		worksy(I_,J_,K_) = (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns1);
+		worksz(I_,J_,K_) = (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns1);
 
 		// part 1, step 2
 		for ( int m = mst; m <= med; ++ m )
@@ -200,9 +233,9 @@ int main()
 		}
 
 		// part 2, step 1
-		worksx(I_,J_,K_) = xfn_area_mul(I_,J_,K_,ns2) + xfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns2);
-		worksy(I_,J_,K_) = yfn_area_mul(I_,J_,K_,ns2) + yfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns2);
-		worksz(I_,J_,K_) = zfn_area_mul(I_,J_,K_,ns2) + zfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns2);
+		worksx(I_,J_,K_) = (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2);
+		worksy(I_,J_,K_) = (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2);
+		worksz(I_,J_,K_) = (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2);
 
 		for ( int m = mst; m <= med; ++ m )
 		{
@@ -223,9 +256,9 @@ int main()
 		}
 
 		// part 3, step 1
-		worksx(I_,J_,K_) = xfn_area_mul(I_,J_,K_,ns3) + xfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns3);
-		worksy(I_,J_,K_) = yfn_area_mul(I_,J_,K_,ns3) + yfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns3);
-		worksz(I_,J_,K_) = zfn_area_mul(I_,J_,K_,ns3) + zfn_area_mul(I_-il1,J_-jl1,K_-kl1,ns3);
+		worksx(I_,J_,K_) = (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3);
+		worksy(I_,J_,K_) = (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3);
+		worksz(I_,J_,K_) = (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3);
 
 		for ( int m = mst; m <= med; ++ m )
 		{
