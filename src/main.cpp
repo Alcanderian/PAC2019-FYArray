@@ -114,6 +114,24 @@ int main()
 
 
 	{
+	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
+	#define A_4D(i0, i1, i2, i3)	((i0) * s_0 + (i1) * s_1 + (i2) * s_2 + (i3) * s_3)
+	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
+
+	const int s0 = 1;
+	const int s1 = s0 * (ni + 3);
+	const int s2 = s1 * (nj + 3);
+	const int s3 = s2 * (nk + 3);
+
+	const int s_0 = 1;
+	const int s_1 = s_0 * (ni + 1);
+	const int s_2 = s_1 * (nj + 1);
+	const int s_3 = s_2 * (nk + 1);
+
+	const int s00 = 1;
+	const int s01 = s00 * (ni);
+	const int s02 = s01 * (nj);
+
 	Range I0(1,ni);
 	Range J0(1,nj);
 	Range K0(1,nk);
@@ -149,18 +167,56 @@ int main()
 	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
 	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
 
+	RDouble4D* x_dim_sums[2][2][2];
+	RDouble4D* y_dim_sums[2][2][2];
+	RDouble4D* z_dim_sums[2][2][2];
+	RDouble4D* q_4d_convs[2][2][2];
+	RDouble3D* rev_vol_sums[2][2][2];
+
 	end=rdtsc();
 	elapsed= (end - start)/(F*Time);
 	cout<<"The allocation elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
 
+	cout << D.first() << " " << D.last() << endl;
 
-	xfn_area_mul(I,J,K,D) = xfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
-	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
-	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
+	double* Pxfn_area_mul = &xfn_area_mul[0];
+	double* Pyfn_area_mul = &yfn_area_mul[0];
+	double* Pzfn_area_mul = &zfn_area_mul[0];
+	double* Pxmul_dim1_sum = &xmul_dim1_sum[0];
+	double* Pymul_dim1_sum = &ymul_dim1_sum[0];
+	double* Pzmul_dim1_sum = &zmul_dim1_sum[0];
+	double* Pxmul_dim2_sum = &xmul_dim2_sum[0];
+	double* Pymul_dim2_sum = &ymul_dim2_sum[0];
+	double* Pzmul_dim2_sum = &zmul_dim2_sum[0];
+	double* Pxmul_dim3_sum = &xmul_dim3_sum[0];
+	double* Pymul_dim3_sum = &ymul_dim3_sum[0];
+	double* Pzmul_dim3_sum = &zmul_dim3_sum[0];
+	double* Pq_4d_xy_conv = &q_4d_xy_conv[0];
+	double* Pq_4d_yz_conv = &q_4d_yz_conv[0];
+	double* Pq_4d_xz_conv = &q_4d_xz_conv[0];
+	double* Prev_vol_sum_dim1 = &rev_vol_sum_dim1[0];
+	double* Prev_vol_sum_dim2 = &rev_vol_sum_dim2[0];
+	double* Prev_vol_sum_dim3 = &rev_vol_sum_dim3[0];
+	const double* Pxfn = &xfn[0];
+	const double* Pyfn = &yfn[0];
+	const double* Pzfn = &zfn[0];
+	const double* Pvol = &vol[0];
+	const double* Parea = &area[0];
 
-	RDouble4D* x_dim_sums[2][2][2];
-	RDouble4D* y_dim_sums[2][2][2];
-	RDouble4D* z_dim_sums[2][2][2];
+	for ( int d = D.first(); d <= D.last(); ++ d )
+	{
+		for(int k = 0; k <= nk+1; ++k) {
+			for(int j = 0; j <= nj+1; ++j) {
+				#pragma ivdep
+				for(int i = 0; i <= ni+1; ++i) {
+					Pxfn_area_mul[A4D(i,j,k,d)] = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					Pyfn_area_mul[A4D(i,j,k,d)] = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					Pzfn_area_mul[A4D(i,j,k,d)] = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+				}
+			}
+		}
+	}
+
 	xmul_dim1_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_-1,J_,K_,D);
 	ymul_dim1_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_-1,J_,K_,D);
 	zmul_dim1_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_-1,J_,K_,D);
@@ -170,6 +226,13 @@ int main()
 	xmul_dim3_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_,J_,K_-1,D);
 	ymul_dim3_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_,J_,K_-1,D);
 	zmul_dim3_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_,J_,K_-1,D);
+	q_4d_xy_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_ - 1, J_ - 1, K_, M));
+	q_4d_yz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_, J_ - 1, K_ - 1, M));
+	q_4d_xz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_ - 1, J_, K_ - 1, M));
+	rev_vol_sum_dim1(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0 - 1, J0, K0));
+	rev_vol_sum_dim2(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0 - 1, K0));
+	rev_vol_sum_dim3(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0, K0 - 1));
+
 	x_dim_sums[1][0][0] = &xmul_dim1_sum;
 	x_dim_sums[0][1][0] = &xmul_dim2_sum;
 	x_dim_sums[0][0][1] = &xmul_dim3_sum;
@@ -179,20 +242,9 @@ int main()
 	z_dim_sums[1][0][0] = &zmul_dim1_sum;
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
-
-	// this can also be optimized
-	q_4d_xy_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_ - 1, J_ - 1, K_, M));
-	q_4d_yz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_, J_ - 1, K_ - 1, M));
-	q_4d_xz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_ - 1, J_, K_ - 1, M));
-	RDouble4D* q_4d_convs[2][2][2];
 	q_4d_convs[1][1][0] = &q_4d_xy_conv;
 	q_4d_convs[0][1][1] = &q_4d_yz_conv;
 	q_4d_convs[1][0][1] = &q_4d_xz_conv;
-
-	rev_vol_sum_dim1(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0 - 1, J0, K0));
-	rev_vol_sum_dim2(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0 - 1, K0));
-	rev_vol_sum_dim3(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0, K0 - 1));
-	RDouble3D* rev_vol_sums[2][2][2];
 	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
 	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
 	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
@@ -206,24 +258,6 @@ int main()
 	double* Pdqdy_4d = &dqdy_4d[0];
 	double* Pdqdz_4d = &dqdz_4d[0];
 	const double* Pq_4d = &q_4d[0];
-
-	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
-	#define A_4D(i0, i1, i2, i3)	((i0) * s_0 + (i1) * s_1 + (i2) * s_2 + (i3) * s_3)
-	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
-
-	const int s0 = 1;
-	const int s1 = s0 * (ni + 3);
-	const int s2 = s1 * (nj + 3);
-	const int s3 = s2 * (nk + 3);
-
-	const int s_0 = 1;
-	const int s_1 = s_0 * (ni + 1);
-	const int s_2 = s_1 * (nj + 1);
-	const int s_3 = s_2 * (nk + 1);
-
-	const int s00 = 1;
-	const int s01 = s00 * (ni);
-	const int s02 = s01 * (nj);
 
 	#pragma omp parallel
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
