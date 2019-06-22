@@ -204,9 +204,30 @@ int main()
 	const double* Pvol = &vol[0];
 	const double* Parea = &area[0];
 	const double* Pq_4d = &q_4d[0];
+	double* Pdqdx_4d = &dqdx_4d[0];
+	double* Pdqdy_4d = &dqdy_4d[0];
+	double* Pdqdz_4d = &dqdz_4d[0];
+	x_dim_sums[1][0][0] = &xmul_dim1_sum;
+	x_dim_sums[0][1][0] = &xmul_dim2_sum;
+	x_dim_sums[0][0][1] = &xmul_dim3_sum;
+	y_dim_sums[1][0][0] = &ymul_dim1_sum;
+	y_dim_sums[0][1][0] = &ymul_dim2_sum;
+	y_dim_sums[0][0][1] = &ymul_dim3_sum;
+	z_dim_sums[1][0][0] = &zmul_dim1_sum;
+	z_dim_sums[0][1][0] = &zmul_dim2_sum;
+	z_dim_sums[0][0][1] = &zmul_dim3_sum;
+	q_4d_convs[1][1][0] = &q_4d_xy_conv;
+	q_4d_convs[0][1][1] = &q_4d_yz_conv;
+	q_4d_convs[1][0][1] = &q_4d_xz_conv;
+	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
+	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
+	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
 
+	#pragma omp parallel
+	{
 	for ( int d = D.first(); d <= D.last(); ++ d )
 	{
+		#pragma omp for
 		for(int k = 0; k <= nk+1; ++k) {
 			for(int j = 0; j <= nj+1; ++j) {
 				#pragma ivdep
@@ -217,6 +238,7 @@ int main()
 				}
 			}
 		}
+		#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 				#pragma ivdep
@@ -236,6 +258,7 @@ int main()
 	}
 
 	for ( int m = M.first(); m <= M.last(); ++ m ) {
+		#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 				#pragma ivdep
@@ -248,6 +271,7 @@ int main()
 		}
 	}
 
+	#pragma omp for
 	for(int k = 1; k <= nk; ++k) {
 		for(int j = 1; j <= nj; ++j) {
 			#pragma ivdep
@@ -259,32 +283,14 @@ int main()
 		}
 	}
 
-	x_dim_sums[1][0][0] = &xmul_dim1_sum;
-	x_dim_sums[0][1][0] = &xmul_dim2_sum;
-	x_dim_sums[0][0][1] = &xmul_dim3_sum;
-	y_dim_sums[1][0][0] = &ymul_dim1_sum;
-	y_dim_sums[0][1][0] = &ymul_dim2_sum;
-	y_dim_sums[0][0][1] = &ymul_dim3_sum;
-	z_dim_sums[1][0][0] = &zmul_dim1_sum;
-	z_dim_sums[0][1][0] = &zmul_dim2_sum;
-	z_dim_sums[0][0][1] = &zmul_dim3_sum;
-	q_4d_convs[1][1][0] = &q_4d_xy_conv;
-	q_4d_convs[0][1][1] = &q_4d_yz_conv;
-	q_4d_convs[1][0][1] = &q_4d_xz_conv;
-	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
-	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
-	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
+	#pragma omp master
+	{	
+		end=rdtsc();
+		elapsed= (end - start)/(F*Time);
+		cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
+	}
 
-	end=rdtsc();
-	elapsed= (end - start)/(F*Time);
-	cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
-
-	// fetch ptrs
-	double* Pdqdx_4d = &dqdx_4d[0];
-	double* Pdqdy_4d = &dqdy_4d[0];
-	double* Pdqdz_4d = &dqdz_4d[0];
-
-	#pragma omp parallel
+	// #pragma omp parallel
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
 		int ns1 = nsurf;
@@ -413,6 +419,7 @@ int main()
 				}
 			}
 		}
+	}
 	}
 	}
 
