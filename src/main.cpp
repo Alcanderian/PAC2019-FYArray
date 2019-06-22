@@ -180,6 +180,17 @@ int main()
 	q_4d_convs[0][1][1] = &q_4d_yz_conv;
 	q_4d_convs[1][0][1] = &q_4d_xz_conv;
 
+	RDouble3D rev_vol_sum_dim1(I0, J0, K0, fortranArray);
+	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
+	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
+	rev_vol_sum_dim1(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0 - 1, J0, K0));
+	rev_vol_sum_dim2(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0 - 1, K0));
+	rev_vol_sum_dim3(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0, K0 - 1));
+	RDouble3D* rev_vol_sums[2][2][2];
+	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
+	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
+	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
+
 	RDouble3D worksx(I_,J_,K_,fortranArray);
 	RDouble3D worksy(I_,J_,K_,fortranArray);
 	RDouble3D worksz(I_,J_,K_,fortranArray);
@@ -281,15 +292,12 @@ int main()
 			dqdz_4d(I_-il3,J_-jl3,K_-kl3,m) += worksz(I_,J_,K_) * workqm(I_,J_,K_);
 		}
 
-		// part 4, step 1
-		workqm(I0,J0,K0) = 1.0 / (  vol_const_ref(I0, J0, K0) + vol_const_ref(I0-il1, J0-jl1, K0-kl1) );
-
 		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
-			dqdy_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
-			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
+			dqdx_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
+			dqdy_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
+			dqdz_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
 		}
 
 	}
