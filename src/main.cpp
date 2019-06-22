@@ -168,7 +168,17 @@ int main()
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
 
-	// RDouble4D q_4d_conv();
+	RDouble4D q_4d_xy_conv(I_, J_, K_, M, fortranArray);
+	RDouble4D q_4d_yz_conv(I_, J_, K_, M, fortranArray);
+	RDouble4D q_4d_xz_conv(I_, J_, K_, M, fortranArray);
+	// this can also be optimized
+	q_4d_xy_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_ - 1, J_ - 1, K_, M));
+	q_4d_yz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_, J_ - 1, K_ - 1, M));
+	q_4d_xz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_ - 1, J_, K_ - 1, M));
+	RDouble4D* q_4d_convs[2][2][2];
+	q_4d_convs[1][1][0] = &q_4d_xy_conv;
+	q_4d_convs[0][1][1] = &q_4d_yz_conv;
+	q_4d_convs[1][0][1] = &q_4d_xz_conv;
 
 	RDouble3D worksx(I_,J_,K_,fortranArray);
 	RDouble3D worksy(I_,J_,K_,fortranArray);
@@ -238,10 +248,7 @@ int main()
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			workqm(I_,J_,K_) = fourth * ( q_4d_const_ref(I_,J_,K_,m) +							// conv minus:
-									   q_4d_const_ref(I_-il1,J_-jl1,K_-kl1,m) +				// [1, 0, 0], [0, 1, 0], [0, 0, 1]
-									   q_4d_const_ref(I_-il2,J_-jl2,K_-kl2,m) +				// [0, 1, 0], [0, 0, 1], [1, 0, 0]
-									   q_4d_const_ref(I_-il1-il2,J_-jl1-jl2,K_-kl1-kl2,m) );	// [1, 1, 0], [0, 1, 1], [1, 0, 1]
+			workqm(I_,J_,K_) = (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
 
 			// part 2, step 2
 			dqdx_4d(I_,J_,K_,m) -= worksx(I_,J_,K_) * workqm(I_,J_,K_);
@@ -261,10 +268,7 @@ int main()
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			workqm(I_,J_,K_) = fourth * ( 	q_4d_const_ref(I_,J_,K_,m) +							// conv minus:
-										q_4d_const_ref(I_-il1,J_-jl1,K_-kl1,m) +				// [1, 0, 0], [0, 1, 0], [0, 0, 1]
-										q_4d_const_ref(I_-il3,J_-jl3,K_-kl3,m) +				// [0, 0, 1], [1, 0, 0], [0, 1, 0]
-										q_4d_const_ref(I_-il1-il3,J_-jl1-jl3,K_-kl1-kl3,m) );	// [1, 0, 1], [1, 1, 0], [0, 1, 1]
+			workqm(I_,J_,K_) = (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
 
 			// part 3, step 2
 			dqdx_4d(I_,J_,K_,m) -= worksx(I_,J_,K_) * workqm(I_,J_,K_);
