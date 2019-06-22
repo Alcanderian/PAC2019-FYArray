@@ -203,7 +203,7 @@ int main()
 
 	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 	#define A_4D(i0, i1, i2, i3)	((i0) * s_0 + (i1) * s_1 + (i2) * s_2 + (i3) * s_3)
-	// #define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
+	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
 
 	const int s0 = 1;
 	const int s1 = s0 * (ni + 3);
@@ -254,7 +254,6 @@ int main()
 			jl3 = 1;
 		}
 
-		// get ptr related to <ijk>l<123>
 		const double* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
 		const double* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
 		const double* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
@@ -289,39 +288,74 @@ int main()
 			}
 		}
 
+		const double* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
+		const double* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
+
 		// part 2, step 1
 		for ( int m = mst; m <= med; ++ m )
 		{
-			// part 2, step 2
-			dqdx_4d(I_,J_,K_,m) -= (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
-			dqdy_4d(I_,J_,K_,m) -= (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
-			dqdz_4d(I_,J_,K_,m) -= (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+					#pragma ivdep
+					for(int i = 1; i <= ni+1; ++i) {
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+					}
+				}
+			}
 
-			// part 2, step 3
-			dqdx_4d(I_-il2,J_-jl2,K_-kl2,m) += (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
-			dqdy_4d(I_-il2,J_-jl2,K_-kl2,m) += (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
-			dqdz_4d(I_-il2,J_-jl2,K_-kl2,m) += (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns2) * (*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])(I_,J_,K_,m);
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+					#pragma ivdep
+					for(int i = 1; i <= ni+1; ++i) {
+						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Px_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+						Pdqdy_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Py_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+						Pdqdz_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Pz_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
+					}
+				}
+			}
 		}
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			// part 3, step 2
-			dqdx_4d(I_,J_,K_,m) -= (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
-			dqdy_4d(I_,J_,K_,m) -= (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
-			dqdz_4d(I_,J_,K_,m) -= (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
-
-			// part 3, step 3
-			dqdx_4d(I_-il3,J_-jl3,K_-kl3,m) += (*x_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
-			dqdy_4d(I_-il3,J_-jl3,K_-kl3,m) += (*y_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
-			dqdz_4d(I_-il3,J_-jl3,K_-kl3,m) += (*z_dim_sums[il1][jl1][kl1])(I_, J_, K_, ns3) * (*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])(I_,J_,K_,m);
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+					#pragma ivdep
+					for(int i = 1; i <= ni+1; ++i) {
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+					}
+				}
+			}
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+					#pragma ivdep
+					for(int i = 1; i <= ni+1; ++i) {
+						Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Px_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+						Pdqdy_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Py_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+						Pdqdz_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Pz_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
+					}
+				}
+			}
 		}
+
+		const double* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
 
 		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
-			dqdx_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
-			dqdy_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
-			dqdz_4d(I0,J0,K0,m) *= (*rev_vol_sums[il1][jl1][kl1])(I0,J0,K0);
+			for(int k = 1; k <= nk; ++k) {
+				for(int j = 1; j <= nj; ++j) {
+					#pragma ivdep
+					for(int i = 1; i <= ni; ++i) {
+						Pdqdx_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
+						Pdqdy_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
+						Pdqdz_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
+					}
+				}
+			}
 		}
 
 	}
