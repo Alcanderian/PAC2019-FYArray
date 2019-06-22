@@ -219,6 +219,7 @@ int main()
 	const int s01 = s00 * (ni);
 	const int s02 = s01 * (nj);
 
+	#pragma omp parallel
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
 		int ns1 = nsurf;
@@ -261,6 +262,7 @@ int main()
 		// part 1, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -276,6 +278,7 @@ int main()
 		// part 1, step 3
 		for ( int m = mst; m <= med; ++ m )
 		{
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -294,6 +297,7 @@ int main()
 		// part 2, step 1
 		for ( int m = mst; m <= med; ++ m )
 		{
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -305,6 +309,7 @@ int main()
 				}
 			}
 
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -319,6 +324,7 @@ int main()
 
 		for ( int m = mst; m <= med; ++ m )
 		{
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -329,6 +335,7 @@ int main()
 					}
 				}
 			}
+			#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -346,6 +353,7 @@ int main()
 		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
+			#pragma omp for
 			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 					#pragma ivdep
@@ -357,7 +365,6 @@ int main()
 				}
 			}
 		}
-
 	}
 	}
 
