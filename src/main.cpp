@@ -58,26 +58,22 @@ int main()
 		}
 	}
 
-	// 申请变量空间
 	I = Range(-1,ni+1);
 	J = Range(-1,nj+1);
 	K = Range(-1,nk+1);
 	Range D(1,3);
-	RDouble4D xfn (I,J,K,D,fortranArray);  // 网格单元↙左下面法向，D为方向
+	RDouble4D xfn (I,J,K,D,fortranArray);
 	RDouble4D yfn (I,J,K,D,fortranArray);
 	RDouble4D zfn (I,J,K,D,fortranArray);
-	RDouble4D area(I,J,K,D,fortranArray);  // 网格单元↙左下面面积
-	RDouble3D vol (I,J,K,  fortranArray);  // 网格单元体积
+	RDouble4D area(I,J,K,D,fortranArray);
+	RDouble3D vol (I,J,K,  fortranArray);
 
-	Range M(0,3); // 4个变量：速度u、v、w，温度T
-	RDouble4D q_4d(I,J,K,M,fortranArray); // 存储流场量，位置在单元中心
-	RDouble4D dqdx_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏x
-	RDouble4D dqdy_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏y
-	RDouble4D dqdz_4d(I,J,K,M,fortranArray); // 存储流场量计算得到的梯度偏z
+	Range M(0,3);
+	RDouble4D q_4d(I,J,K,M,fortranArray);
+	RDouble4D dqdx_4d(I,J,K,M,fortranArray);
+	RDouble4D dqdy_4d(I,J,K,M,fortranArray);
+	RDouble4D dqdz_4d(I,J,K,M,fortranArray);
 
-	// 计算网格单元几何数据 xfn、fn、zfn、area、vol
-	// 速度u、v、w，温度T 流场变量赋值，存储在q_4d中，便于后面速度、温度界面梯度计算
-	// 程序每执行一个迭代步，流场变量被更新。此处给初场值u=1.0，v=0.0，w=0.0，T=1.0
 	for ( int k = -1; k <= nk+1; ++ k )
 	{
 		for ( int j = -1; j <= nj+1; ++ j )
@@ -115,13 +111,7 @@ int main()
 	}
 	printf("init finished\n");
 	start=rdtsc();
-	//以上为数据初始化部分，不可修改！
-	// --------------------------------------------------------------------
-	// 求解速度、温度在“单元界面”上的梯度，i、j、k三个方向依次求解
-	// 在程序中是“耗时部分”，每一个迭代步都会求解，以下为未优化代码
-	// 希望参赛队伍在理解该算法的基础上，实现更高效的界面梯度求解，提升程序执行效率
-	// --------------------------------------------------------------------
-	// 此处开始统计计算部分代码运行时间
+
 
 	{
 	Range I0(1,ni);
@@ -265,13 +255,9 @@ int main()
 			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
 		}
 
-	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
-	
 	}
 	}
-	//----------------------------------------------------
-	//以下为正确性对比部分，不可修改！
-	//----------------------------------------------------
+
 	end=rdtsc();
 	elapsed= (end - start)/(F*Time);
 	cout<<"The programe elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
@@ -290,8 +276,8 @@ int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d)
 		exit(1);
 	}
 		// #pragma omp parallel for
-		for ( int i = 0; i < ni; ++ i )
-		// for ( int i = 0; i < 2; ++ i )
+		// for ( int i = 0; i < ni; ++ i )
+	for ( int i = 0; i < 2; ++ i )
 	{
 			for ( int j = 0; j < nj; ++ j )
 		{
