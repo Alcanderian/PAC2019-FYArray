@@ -123,72 +123,10 @@ int main()
 	// 希望参赛队伍在理解该算法的基础上，实现更高效的界面梯度求解，提升程序执行效率
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
-
-#define ARRAY_TEST
-#undef ARRAY_TEST
-#ifdef ARRAY_TEST
-	{
-		printf("[fortranArray]\n");
-		RDouble3D ftest(3, 4, 1, fortranArray);
-		int fnnn = 0;
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				ftest(i, j, 0) = (double)(++fnnn);
-			}
-		}
-
-		double *Pftest = &ftest[0]; // to get the correct pointer
-		printf("shape: 3, 4, 1\n");
-		printf("stride: %d, %d, %d\n", ftest.stride(0), ftest.stride(1), ftest.stride(2));
-		printf("j * 3 + i: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pftest[j * 3 + i]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-		printf("i * 4 + j: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pftest[i * 4 + j]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-
-		printf("[cArray]\n");
-		RDouble3D ctest(3, 4, 1);
-		int cnnn = 0;
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				ctest(i, j, 0) = (double)(++cnnn);
-			}
-		}
-
-		double *Pctest = &ctest[0]; // to get the correct pointer
-		printf("shape: 3, 4, 1\n");
-		printf("stride: %d, %d, %d\n", ctest.stride(0), ctest.stride(1), ctest.stride(2));
-		printf("j * 3 + i: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pctest[j * 3 + i]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-		printf("i * 4 + j: ");
-		for(int i = 0; i < 3; ++i) {
-			for(int j = 0; j < 4; ++j) {
-				printf("%02.0lf ", Pctest[i * 4 + j]);
-			}
-			printf("| ");
-		}
-		printf("\n");
-
-		exit(0);
-	}
-#endif
+	RDouble3D worksx(I,J,K,fortranArray);
+	RDouble3D worksy(I,J,K,fortranArray);
+	RDouble3D worksz(I,J,K,fortranArray);
+	RDouble3D workqm(I,J,K,fortranArray);
 
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
@@ -236,15 +174,6 @@ int main()
 		Range M(mst,med);
 #define EXPANDED
 
-		Range IW(-1,ni+1);
-		Range JW(-1,nj+1);
-		Range KW(-1,nk+1);
-
-		RDouble3D worksx(IW,JW,KW,fortranArray);
-		RDouble3D worksy(IW,JW,KW,fortranArray);
-		RDouble3D worksz(IW,JW,KW,fortranArray);
-		RDouble3D workqm(IW,JW,KW,fortranArray);
-
 #ifdef EXPANDED
 		double* Pworksx = &worksx[0];
 		double* Pworksy = &worksy[0];
@@ -253,12 +182,13 @@ int main()
 		double* Pdqdx_4d = &dqdx_4d[0];
 		double* Pdqdy_4d = &dqdy_4d[0];
 		double* Pdqdz_4d = &dqdz_4d[0];
-		double* Pxfn = &xfn[0];
-		double* Pyfn = &yfn[0];
-		double* Pzfn = &zfn[0];
-		double* Parea = &area[0];
-		double* Pq_4d = &q_4d[0];
-		double* Pvol = &vol[0];
+
+		const double* Pxfn = &xfn[0];
+		const double* Pyfn = &yfn[0];
+		const double* Pzfn = &zfn[0];
+		const double* Parea = &area[0];
+		const double* Pq_4d = &q_4d[0];
+		const double* Pvol = &vol[0];
 
 		const int s0 = 1;
 		const int s1 = s0 * (ni + 3);
