@@ -118,6 +118,9 @@ int main()
 	Range J0(1,nj);
 	Range K0(1,nk);
 
+	Range I_(1,ni+1);
+	Range J_(1,nj+1);
+	Range K_(1,nk+1);
 
 	const RDouble4D& xfn_const_ref = xfn;
 	const RDouble4D& yfn_const_ref = yfn;
@@ -134,29 +137,27 @@ int main()
 	yfn_area_mul(I,J,K,D) = yfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
 	zfn_area_mul(I,J,K,D) = zfn_const_ref(I,J,K,D) * area_const_ref(I,J,K,D);
 
-	RDouble4D xmul_dim1_sum(I,J,K,D,fortranArray);
-	RDouble4D ymul_dim1_sum(I,J,K,D,fortranArray);
-	RDouble4D zmul_dim1_sum(I,J,K,D,fortranArray);
-	RDouble4D xmul_dim2_sum(I,J,K,D,fortranArray);
-	RDouble4D ymul_dim2_sum(I,J,K,D,fortranArray);
-	RDouble4D zmul_dim2_sum(I,J,K,D,fortranArray);
-	RDouble4D xmul_dim3_sum(I,J,K,D,fortranArray);
-	RDouble4D ymul_dim3_sum(I,J,K,D,fortranArray);
-	RDouble4D zmul_dim3_sum(I,J,K,D,fortranArray);
-	xmul_dim1_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I-1,J,K,D);
-	ymul_dim1_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I-1,J,K,D);
-	zmul_dim1_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I-1,J,K,D);
-	xmul_dim2_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I,J-1,K,D);
-	ymul_dim2_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I,J-1,K,D);
-	zmul_dim2_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I,J-1,K,D);
-	xmul_dim3_sum(I,J,K,D) = xfn_area_mul(I,J,K,D) + xfn_area_mul(I,J,K-1,D);
-	ymul_dim3_sum(I,J,K,D) = yfn_area_mul(I,J,K,D) + yfn_area_mul(I,J,K-1,D);
-	zmul_dim3_sum(I,J,K,D) = zfn_area_mul(I,J,K,D) + zfn_area_mul(I,J,K-1,D);
-
 	RDouble4D* x_dim_sums[2][2][2];
 	RDouble4D* y_dim_sums[2][2][2];
 	RDouble4D* z_dim_sums[2][2][2];
-
+	RDouble4D xmul_dim1_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D ymul_dim1_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D zmul_dim1_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D xmul_dim2_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D ymul_dim2_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D zmul_dim2_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D xmul_dim3_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D ymul_dim3_sum(I_,J_,K_,D,fortranArray);
+	RDouble4D zmul_dim3_sum(I_,J_,K_,D,fortranArray);
+	xmul_dim1_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_-1,J_,K_,D);
+	ymul_dim1_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_-1,J_,K_,D);
+	zmul_dim1_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_-1,J_,K_,D);
+	xmul_dim2_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_,J_-1,K_,D);
+	ymul_dim2_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_,J_-1,K_,D);
+	zmul_dim2_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_,J_-1,K_,D);
+	xmul_dim3_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_,J_,K_-1,D);
+	ymul_dim3_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_,J_,K_-1,D);
+	zmul_dim3_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_,J_,K_-1,D);
 	x_dim_sums[1][0][0] = &xmul_dim1_sum;
 	x_dim_sums[0][1][0] = &xmul_dim2_sum;
 	x_dim_sums[0][0][1] = &xmul_dim3_sum;
@@ -167,9 +168,7 @@ int main()
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
 
-	Range I_(1,ni+1);
-	Range J_(1,nj+1);
-	Range K_(1,nk+1);
+	// RDouble4D q_4d_conv();
 
 	RDouble3D worksx(I_,J_,K_,fortranArray);
 	RDouble3D worksy(I_,J_,K_,fortranArray);
