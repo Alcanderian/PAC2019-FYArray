@@ -317,8 +317,10 @@ int main()
 		const RDouble* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
+		const RDouble* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
+		const RDouble* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
+		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
 
-		// part 1, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
 			#pragma omp for
@@ -334,7 +336,6 @@ int main()
 			}
 		}
 
-		// part 1, step 3
 		for ( int m = mst; m <= med; ++ m )
 		{
 			#pragma omp for
@@ -345,40 +346,12 @@ int main()
 						Pdqdx_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Py_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Pz_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
-					}
-				}
-			}
-		}
-
-		const RDouble* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
-		const RDouble* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
-
-		// part 2, step 1
-		for ( int m = mst; m <= med; ++ m )
-		{
-			#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-					#pragma ivdep
-					for(int i = 1; i <= ni+1; ++i) {
 						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
 						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Px_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
 						Pdqdy_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Py_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
 						Pdqdz_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Pz_dim_sum[A_4D(i,j,k,ns2)] * Pq_4d_conv2[A_4D(i,j,k,m)];
-					}
-				}
-			}
-		}
-
-		for ( int m = mst; m <= med; ++ m )
-		{
-			#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-					#pragma ivdep
-					for(int i = 1; i <= ni+1; ++i) {
 						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
@@ -390,9 +363,6 @@ int main()
 			}
 		}
 
-		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
-
-		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
 		{
 			#pragma omp for
