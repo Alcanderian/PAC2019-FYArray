@@ -117,6 +117,7 @@ int main()
 	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 	#define A_4D(i0, i1, i2, i3)	((i0) * s_0 + (i1) * s_1 + (i2) * s_2 + (i3) * s_3)
 	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
+	#define A3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 
 	const int s0 = 1;
 	const int s1 = s0 * (ni + 3);
@@ -202,6 +203,7 @@ int main()
 	const double* Pzfn = &zfn[0];
 	const double* Pvol = &vol[0];
 	const double* Parea = &area[0];
+	const double* Pq_4d = &q_4d[0];
 
 	for ( int d = D.first(); d <= D.last(); ++ d )
 	{
@@ -215,23 +217,47 @@ int main()
 				}
 			}
 		}
+		for(int k = 1; k <= nk+1; ++k) {
+			for(int j = 1; j <= nj+1; ++j) {
+				#pragma ivdep
+				for(int i = 1; i <= ni+1; ++i) {
+					Pxmul_dim1_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i-1,j,k,d)];
+					Pymul_dim1_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i-1,j,k,d)];
+					Pzmul_dim1_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i-1,j,k,d)];
+					Pxmul_dim2_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i,j-1,k,d)];
+					Pymul_dim2_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i,j-1,k,d)];
+					Pzmul_dim2_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i,j-1,k,d)];
+					Pxmul_dim3_sum[A_4D(i,j,k,d)] = Pxfn_area_mul[A4D(i,j,k,d)] + Pxfn_area_mul[A4D(i,j,k-1,d)];
+					Pymul_dim3_sum[A_4D(i,j,k,d)] = Pyfn_area_mul[A4D(i,j,k,d)] + Pyfn_area_mul[A4D(i,j,k-1,d)];
+					Pzmul_dim3_sum[A_4D(i,j,k,d)] = Pzfn_area_mul[A4D(i,j,k,d)] + Pzfn_area_mul[A4D(i,j,k-1,d)];
+				}
+			}
+		}
 	}
 
-	xmul_dim1_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_-1,J_,K_,D);
-	ymul_dim1_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_-1,J_,K_,D);
-	zmul_dim1_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_-1,J_,K_,D);
-	xmul_dim2_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_,J_-1,K_,D);
-	ymul_dim2_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_,J_-1,K_,D);
-	zmul_dim2_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_,J_-1,K_,D);
-	xmul_dim3_sum(I_,J_,K_,D) = xfn_area_mul(I_,J_,K_,D) + xfn_area_mul(I_,J_,K_-1,D);
-	ymul_dim3_sum(I_,J_,K_,D) = yfn_area_mul(I_,J_,K_,D) + yfn_area_mul(I_,J_,K_-1,D);
-	zmul_dim3_sum(I_,J_,K_,D) = zfn_area_mul(I_,J_,K_,D) + zfn_area_mul(I_,J_,K_-1,D);
-	q_4d_xy_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_ - 1, J_ - 1, K_, M));
-	q_4d_yz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_, J_ - 1, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_, J_ - 1, K_ - 1, M));
-	q_4d_xz_conv(I_, J_, K_, M) = fourth * (q_4d_const_ref(I_, J_, K_, M) + q_4d_const_ref(I_ - 1, J_, K_, M) + q_4d_const_ref(I_, J_, K_ - 1, M) + q_4d_const_ref(I_ - 1, J_, K_ - 1, M));
-	rev_vol_sum_dim1(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0 - 1, J0, K0));
-	rev_vol_sum_dim2(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0 - 1, K0));
-	rev_vol_sum_dim3(I0, J0, K0) = 1.0 / (vol_const_ref(I0, J0, K0) + vol_const_ref(I0, J0, K0 - 1));
+	for ( int m = M.first(); m <= M.last(); ++ m ) {
+		for(int k = 1; k <= nk+1; ++k) {
+			for(int j = 1; j <= nj+1; ++j) {
+				#pragma ivdep
+				for(int i = 1; i <= ni+1; ++i) {
+					Pq_4d_xy_conv[A_4D(i,j,k,m)] = fourth * (Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-1,j,k,m)] + Pq_4d[A4D(i,j-1,k,m)] + Pq_4d[A4D(i-1,j-1,k,m)]);
+					Pq_4d_yz_conv[A_4D(i,j,k,m)] = fourth * (Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i,j,k-1,m)] + Pq_4d[A4D(i,j-1,k,m)] + Pq_4d[A4D(i,j-1,k-1,m)]);
+					Pq_4d_xz_conv[A_4D(i,j,k,m)] = fourth * (Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-1,j,k,m)] + Pq_4d[A4D(i,j,k-1,m)] + Pq_4d[A4D(i-1,j,k-1,m)]);
+				}
+			}
+		}
+	}
+
+	for(int k = 1; k <= nk; ++k) {
+		for(int j = 1; j <= nj; ++j) {
+			#pragma ivdep
+			for(int i = 1; i <= ni; ++i) {
+				Prev_vol_sum_dim1[A03D(i,j,k)] = 1.0 / (Pvol[A3D(i,j,k)] + Pvol[A3D(i-1,j,k)]);
+				Prev_vol_sum_dim2[A03D(i,j,k)] = 1.0 / (Pvol[A3D(i,j,k)] + Pvol[A3D(i,j-1,k)]);
+				Prev_vol_sum_dim3[A03D(i,j,k)] = 1.0 / (Pvol[A3D(i,j,k)] + Pvol[A3D(i,j,k-1)]);
+			}
+		}
+	}
 
 	x_dim_sums[1][0][0] = &xmul_dim1_sum;
 	x_dim_sums[0][1][0] = &xmul_dim2_sum;
@@ -257,7 +283,6 @@ int main()
 	double* Pdqdx_4d = &dqdx_4d[0];
 	double* Pdqdy_4d = &dqdy_4d[0];
 	double* Pdqdz_4d = &dqdz_4d[0];
-	const double* Pq_4d = &q_4d[0];
 
 	#pragma omp parallel
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
