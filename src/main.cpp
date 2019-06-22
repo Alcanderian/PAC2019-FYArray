@@ -200,22 +200,16 @@ int main()
 #endif
 
 #ifdef EXPANDED
-#ifdef NO_USE_WTF
 		for ( int m = mst; m <= med; ++ m ) {
 #pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
-						Pdqdx_4d[LOC4D(i,j,k,m)] = 0.0;
-						Pdqdy_4d[LOC4D(i,j,k,m)] = 0.0;
-						Pdqdz_4d[LOC4D(i,j,k,m)] = 0.0;
-					}
+					memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
+					memset(&Pdqdy_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
+					memset(&Pdqdz_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
 				}
 			}
 		}
-#endif
 #else
 		dqdx_4d(I,J,K,M) = 0.0;
 		dqdy_4d(I,J,K,M) = 0.0;
@@ -246,40 +240,23 @@ int main()
 		worksy(I,J,K) = yfn(I,J,K,ns1) * area(I,J,K,ns1) + yfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
 		worksz(I,J,K) = zfn(I,J,K,ns1) * area(I,J,K,ns1) + zfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
 #endif
+		
+#ifdef EXPANDED
 		for ( int m = mst; m <= med; ++ m )
 		{
-#ifdef EXPANDED
 #pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i) {
-						Pdqdx_4d[LOC4D(i,j,k,m)] = \
-							- Pworksx[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
-						Pdqdy_4d[LOC4D(i,j,k,m)] = \
-							- Pworksy[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
-						Pdqdz_4d[LOC4D(i,j,k,m)] = \
-							- Pworksz[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
-					}
-				}
-			}
-#else
-			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-#endif
-		}
+						Pdqdx_4d[LOC4D(i,j,k,m)] -= \
+							Pworksx[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdy_4d[LOC4D(i,j,k,m)] -= \
+							Pworksy[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdz_4d[LOC4D(i,j,k,m)] -= \
+							Pworksz[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 
-		for ( int m = mst; m <= med; ++ m )
-		{
-#ifdef EXPANDED
-#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
 						Pdqdx_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
 							Pworksx[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
@@ -289,12 +266,22 @@ int main()
 					}
 				}
 			}
+		}
 #else
+		for ( int m = mst; m <= med; ++ m )
+		{
+			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
+			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
+			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
+		}
+
+		for ( int m = mst; m <= med; ++ m )
+		{
 			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
 			dqdy_4d(I-il1,J-jl1,K-kl1,m) += worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
 			dqdz_4d(I-il1,J-jl1,K-kl1,m) += worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-#endif
 		}
+#endif
 
 		if ( ( nsurf != 2 ) || ( nDim != TWO_D ) )
 		{
