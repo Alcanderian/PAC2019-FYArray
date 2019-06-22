@@ -180,30 +180,30 @@ int main()
 
 	cout << D.first() << " " << D.last() << endl;
 
-	double* Pxmul_dim1_sum = &xmul_dim1_sum[0];
-	double* Pymul_dim1_sum = &ymul_dim1_sum[0];
-	double* Pzmul_dim1_sum = &zmul_dim1_sum[0];
-	double* Pxmul_dim2_sum = &xmul_dim2_sum[0];
-	double* Pymul_dim2_sum = &ymul_dim2_sum[0];
-	double* Pzmul_dim2_sum = &zmul_dim2_sum[0];
-	double* Pxmul_dim3_sum = &xmul_dim3_sum[0];
-	double* Pymul_dim3_sum = &ymul_dim3_sum[0];
-	double* Pzmul_dim3_sum = &zmul_dim3_sum[0];
-	double* Pq_4d_xy_conv = &q_4d_xy_conv[0];
-	double* Pq_4d_yz_conv = &q_4d_yz_conv[0];
-	double* Pq_4d_xz_conv = &q_4d_xz_conv[0];
-	double* Prev_vol_sum_dim1 = &rev_vol_sum_dim1[0];
-	double* Prev_vol_sum_dim2 = &rev_vol_sum_dim2[0];
-	double* Prev_vol_sum_dim3 = &rev_vol_sum_dim3[0];
-	const double* Pxfn = &xfn[0];
-	const double* Pyfn = &yfn[0];
-	const double* Pzfn = &zfn[0];
-	const double* Pvol = &vol[0];
-	const double* Parea = &area[0];
-	const double* Pq_4d = &q_4d[0];
-	double* Pdqdx_4d = &dqdx_4d[0];
-	double* Pdqdy_4d = &dqdy_4d[0];
-	double* Pdqdz_4d = &dqdz_4d[0];
+	RDouble* Pxmul_dim1_sum = &xmul_dim1_sum[0];
+	RDouble* Pymul_dim1_sum = &ymul_dim1_sum[0];
+	RDouble* Pzmul_dim1_sum = &zmul_dim1_sum[0];
+	RDouble* Pxmul_dim2_sum = &xmul_dim2_sum[0];
+	RDouble* Pymul_dim2_sum = &ymul_dim2_sum[0];
+	RDouble* Pzmul_dim2_sum = &zmul_dim2_sum[0];
+	RDouble* Pxmul_dim3_sum = &xmul_dim3_sum[0];
+	RDouble* Pymul_dim3_sum = &ymul_dim3_sum[0];
+	RDouble* Pzmul_dim3_sum = &zmul_dim3_sum[0];
+	RDouble* Pq_4d_xy_conv = &q_4d_xy_conv[0];
+	RDouble* Pq_4d_yz_conv = &q_4d_yz_conv[0];
+	RDouble* Pq_4d_xz_conv = &q_4d_xz_conv[0];
+	RDouble* Prev_vol_sum_dim1 = &rev_vol_sum_dim1[0];
+	RDouble* Prev_vol_sum_dim2 = &rev_vol_sum_dim2[0];
+	RDouble* Prev_vol_sum_dim3 = &rev_vol_sum_dim3[0];
+	const RDouble* Pxfn = &xfn[0];
+	const RDouble* Pyfn = &yfn[0];
+	const RDouble* Pzfn = &zfn[0];
+	const RDouble* Pvol = &vol[0];
+	const RDouble* Parea = &area[0];
+	const RDouble* Pq_4d = &q_4d[0];
+	RDouble* Pdqdx_4d = &dqdx_4d[0];
+	RDouble* Pdqdy_4d = &dqdy_4d[0];
+	RDouble* Pdqdz_4d = &dqdz_4d[0];
 	x_dim_sums[1][0][0] = &xmul_dim1_sum;
 	x_dim_sums[0][1][0] = &xmul_dim2_sum;
 	x_dim_sums[0][0][1] = &xmul_dim3_sum;
@@ -229,9 +229,9 @@ int main()
 			for(int j = 1; j <= nj+1; ++j) {
 				#pragma ivdep
 				for(int i = 1; i <= ni+1; ++i) {
-					double tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					double tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					double tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					RDouble tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					RDouble tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
+					RDouble tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
 					Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
 					Pymul_dim1_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
 					Pzmul_dim1_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
@@ -314,9 +314,9 @@ int main()
 			jl3 = 1;
 		}
 
-		const double* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
-		const double* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
-		const double* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
+		const RDouble* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
+		const RDouble* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
+		const RDouble* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
 
 		// part 1, step 2
 		for ( int m = mst; m <= med; ++ m )
@@ -350,8 +350,8 @@ int main()
 			}
 		}
 
-		const double* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
-		const double* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
+		const RDouble* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
+		const RDouble* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
 
 		// part 2, step 1
 		for ( int m = mst; m <= med; ++ m )
@@ -390,7 +390,7 @@ int main()
 			}
 		}
 
-		const double* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
+		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
 
 		// part 4, step 2
 		for ( int m = mst; m <= med; ++ m )
