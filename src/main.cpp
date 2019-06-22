@@ -60,26 +60,26 @@ int main()
 	}
 	
 
-	// ÉêÇë±äÁ¿¿Õ¼ä
+	// ç”³è¯·å˜é‡ç©ºé—´
 	I = Range(-1,ni+1);
 	J = Range(-1,nj+1);
         K = Range(-1,nk+1);
         Range D(1,3);
-	RDouble4D xfn (I,J,K,D,fortranArray);  // Íø¸ñµ¥Ôª¨L×óÏÂÃæ·¨Ïò£¬DÎª·½Ïò
+	RDouble4D xfn (I,J,K,D,fortranArray);  // ç½‘æ ¼å•å…ƒâ†™å·¦ä¸‹é¢æ³•å‘ï¼ŒDä¸ºæ–¹å‘
 	RDouble4D yfn (I,J,K,D,fortranArray);
 	RDouble4D zfn (I,J,K,D,fortranArray);
-	RDouble4D area(I,J,K,D,fortranArray);  // Íø¸ñµ¥Ôª¨L×óÏÂÃæÃæ»ı
-	RDouble3D vol (I,J,K,  fortranArray);  // Íø¸ñµ¥ÔªÌå»ı
+	RDouble4D area(I,J,K,D,fortranArray);  // ç½‘æ ¼å•å…ƒâ†™å·¦ä¸‹é¢é¢ç§¯
+	RDouble3D vol (I,J,K,  fortranArray);  // ç½‘æ ¼å•å…ƒä½“ç§¯
 
-        Range M(0,3); // 4¸ö±äÁ¿£ºËÙ¶Èu¡¢v¡¢w£¬ÎÂ¶ÈT
-        RDouble4D q_4d(I,J,K,M,fortranArray); // ´æ´¢Á÷³¡Á¿£¬Î»ÖÃÔÚµ¥ÔªÖĞĞÄ
-	RDouble4D dqdx_4d(I,J,K,M,fortranArray); // ´æ´¢Á÷³¡Á¿¼ÆËãµÃµ½µÄÌİ¶ÈÆ«x
-	RDouble4D dqdy_4d(I,J,K,M,fortranArray); // ´æ´¢Á÷³¡Á¿¼ÆËãµÃµ½µÄÌİ¶ÈÆ«y
-	RDouble4D dqdz_4d(I,J,K,M,fortranArray); // ´æ´¢Á÷³¡Á¿¼ÆËãµÃµ½µÄÌİ¶ÈÆ«z
+        Range M(0,3); // 4ä¸ªå˜é‡ï¼šé€Ÿåº¦uã€vã€wï¼Œæ¸©åº¦T
+        RDouble4D q_4d(I,J,K,M,fortranArray); // å­˜å‚¨æµåœºé‡ï¼Œä½ç½®åœ¨å•å…ƒä¸­å¿ƒ
+	RDouble4D dqdx_4d(I,J,K,M,fortranArray); // å­˜å‚¨æµåœºé‡è®¡ç®—å¾—åˆ°çš„æ¢¯åº¦åx
+	RDouble4D dqdy_4d(I,J,K,M,fortranArray); // å­˜å‚¨æµåœºé‡è®¡ç®—å¾—åˆ°çš„æ¢¯åº¦åy
+	RDouble4D dqdz_4d(I,J,K,M,fortranArray); // å­˜å‚¨æµåœºé‡è®¡ç®—å¾—åˆ°çš„æ¢¯åº¦åz
 
-	// ¼ÆËãÍø¸ñµ¥Ôª¼¸ºÎÊı¾İ xfn¡¢fn¡¢zfn¡¢area¡¢vol
-	// ËÙ¶Èu¡¢v¡¢w£¬ÎÂ¶ÈT Á÷³¡±äÁ¿¸³Öµ£¬´æ´¢ÔÚq_4dÖĞ£¬±ãÓÚºóÃæËÙ¶È¡¢ÎÂ¶È½çÃæÌİ¶È¼ÆËã
-	// ³ÌĞòÃ¿Ö´ĞĞÒ»¸öµü´ú²½£¬Á÷³¡±äÁ¿±»¸üĞÂ¡£´Ë´¦¸ø³õ³¡Öµu=1.0£¬v=0.0£¬w=0.0£¬T=1.0
+	// è®¡ç®—ç½‘æ ¼å•å…ƒå‡ ä½•æ•°æ® xfnã€fnã€zfnã€areaã€vol
+	// é€Ÿåº¦uã€vã€wï¼Œæ¸©åº¦T æµåœºå˜é‡èµ‹å€¼ï¼Œå­˜å‚¨åœ¨q_4dä¸­ï¼Œä¾¿äºåé¢é€Ÿåº¦ã€æ¸©åº¦ç•Œé¢æ¢¯åº¦è®¡ç®—
+	// ç¨‹åºæ¯æ‰§è¡Œä¸€ä¸ªè¿­ä»£æ­¥ï¼Œæµåœºå˜é‡è¢«æ›´æ–°ã€‚æ­¤å¤„ç»™åˆåœºå€¼u=1.0ï¼Œv=0.0ï¼Œw=0.0ï¼ŒT=1.0
 	for ( int k = -1; k <= nk+1; ++ k )
 	{
 		for ( int j = -1; j <= nj+1; ++ j )
@@ -116,13 +116,13 @@ int main()
 		}
 	}
 	start=rdtsc();
-	//ÒÔÉÏÎªÊı¾İ³õÊ¼»¯²¿·Ö£¬²»¿ÉĞŞ¸Ä£¡
+	//ä»¥ä¸Šä¸ºæ•°æ®åˆå§‹åŒ–éƒ¨åˆ†ï¼Œä¸å¯ä¿®æ”¹ï¼
 	// --------------------------------------------------------------------
-	// Çó½âËÙ¶È¡¢ÎÂ¶ÈÔÚ¡°µ¥Ôª½çÃæ¡±ÉÏµÄÌİ¶È£¬i¡¢j¡¢kÈı¸ö·½ÏòÒÀ´ÎÇó½â
-	// ÔÚ³ÌĞòÖĞÊÇ¡°ºÄÊ±²¿·Ö¡±£¬Ã¿Ò»¸öµü´ú²½¶¼»áÇó½â£¬ÒÔÏÂÎªÎ´ÓÅ»¯´úÂë
-	// Ï£Íû²ÎÈü¶ÓÎéÔÚÀí½â¸ÃËã·¨µÄ»ù´¡ÉÏ£¬ÊµÏÖ¸ü¸ßĞ§µÄ½çÃæÌİ¶ÈÇó½â£¬ÌáÉı³ÌĞòÖ´ĞĞĞ§ÂÊ
+	// æ±‚è§£é€Ÿåº¦ã€æ¸©åº¦åœ¨â€œå•å…ƒç•Œé¢â€ä¸Šçš„æ¢¯åº¦ï¼Œiã€jã€kä¸‰ä¸ªæ–¹å‘ä¾æ¬¡æ±‚è§£
+	// åœ¨ç¨‹åºä¸­æ˜¯â€œè€—æ—¶éƒ¨åˆ†â€ï¼Œæ¯ä¸€ä¸ªè¿­ä»£æ­¥éƒ½ä¼šæ±‚è§£ï¼Œä»¥ä¸‹ä¸ºæœªä¼˜åŒ–ä»£ç 
+	// å¸Œæœ›å‚èµ›é˜Ÿä¼åœ¨ç†è§£è¯¥ç®—æ³•çš„åŸºç¡€ä¸Šï¼Œå®ç°æ›´é«˜æ•ˆçš„ç•Œé¢æ¢¯åº¦æ±‚è§£ï¼Œæå‡ç¨‹åºæ‰§è¡Œæ•ˆç‡
 	// --------------------------------------------------------------------
-	// ´Ë´¦¿ªÊ¼Í³¼Æ¼ÆËã²¿·Ö´úÂëÔËĞĞÊ±¼ä
+	// æ­¤å¤„å¼€å§‹ç»Ÿè®¡è®¡ç®—éƒ¨åˆ†ä»£ç è¿è¡Œæ—¶é—´
 	RDouble3D worksx(I,J,K,fortranArray);
 	RDouble3D worksy(I,J,K,fortranArray);
 	RDouble3D worksz(I,J,K,fortranArray);
@@ -130,6 +130,11 @@ int main()
 
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
+#define EXPANDED
+#ifdef EXPANDED
+#pragma omp parallel
+{
+#endif
 #define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 #define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 		Range I(1,ni+1);
@@ -172,7 +177,6 @@ int main()
 		}
 
 		Range M(mst,med);
-#define EXPANDED
 
 #ifdef EXPANDED
 		double* Pworksx = &worksx[0];
@@ -182,7 +186,6 @@ int main()
 		double* Pdqdx_4d = &dqdx_4d[0];
 		double* Pdqdy_4d = &dqdy_4d[0];
 		double* Pdqdz_4d = &dqdz_4d[0];
-
 		const double* Pxfn = &xfn[0];
 		const double* Pyfn = &yfn[0];
 		const double* Pzfn = &zfn[0];
@@ -198,6 +201,7 @@ int main()
 
 #ifdef EXPANDED
 		for ( int m = mst; m <= med; ++ m ) {
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -216,6 +220,7 @@ int main()
 #endif
 
 #ifdef EXPANDED
+#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -240,6 +245,7 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -263,6 +269,7 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -286,6 +293,7 @@ int main()
 		if ( ( nsurf != 2 ) || ( nDim != TWO_D ) )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -311,27 +319,28 @@ int main()
 			for ( int m = mst; m <= med; ++ m )
 			{
 #ifdef EXPANDED
+#pragma omp for
 				for(int k = 1; k <= nk+1; ++k) {
 					for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 						for(int i = 1; i <= ni+1; ++i) {
-							Pworkqm[LOC3D(i,j,k)] = fourth * ( \
+							double temp = fourth * ( \
 								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 								Pq_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[LOC4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
 
 							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 
 							Pdqdx_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 						}
 					}
 				}
@@ -352,6 +361,7 @@ int main()
 		if ( ( nsurf != 1 ) || ( nDim != TWO_D ) )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -377,27 +387,28 @@ int main()
 			for ( int m = mst; m <= med; ++ m )
 			{
 #ifdef EXPANDED
+#pragma omp for
 				for(int k = 1; k <= nk+1; ++k) {
 					for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 						for(int i = 1; i <= ni+1; ++i) {
-							Pworkqm[LOC3D(i,j,k)] = fourth * ( \
+							double temp = fourth * ( \
 								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
 								Pq_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[LOC4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
 
 							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 
 							Pdqdx_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \	
-								Pworksx[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksx[LOC3D(i,j,k)] * temp;
 							Pdqdy_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksy[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksy[LOC3D(i,j,k)] * temp;
 							Pdqdz_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksz[LOC3D(i,j,k)] * Pworkqm[LOC3D(i,j,k)];
+								Pworksz[LOC3D(i,j,k)] * temp;
 						}
 					}
 				}
@@ -420,14 +431,6 @@ int main()
 		Range K0(1,nk);
 
 #ifdef EXPANDED
-		for(int k = 1; k <= nk; ++k) {
-			for(int j = 1; j <= nj; ++j) {
-#pragma ivdep
-				for(int i = 1; i <= ni; ++i) {
-					Pworkqm[LOC3D(i,j,k)] = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
-				}
-			}
-		}
 #else
 		workqm(I0,J0,K0) = 1.0 / (  vol(I0, J0, K0) + vol(I0-il1, J0-jl1, K0-kl1) );
 #endif
@@ -435,13 +438,15 @@ int main()
 		for ( int m = mst; m <= med; ++ m )
 		{
 #ifdef EXPANDED
+#pragma omp for
 			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 #pragma ivdep
 					for(int i = 1; i <= ni; ++i) {
-						Pdqdx_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
-						Pdqdy_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
-						Pdqdz_4d[LOC4D(i,j,k,m)] *= Pworkqm[LOC3D(i,j,k)];
+						double temp = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
+						Pdqdx_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdy_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdz_4d[LOC4D(i,j,k,m)] *= temp;
 					}
 				}
 			}
@@ -451,13 +456,15 @@ int main()
 			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
 #endif
 		}
-
-	// ¸Ã·½Ïò½çÃæÌİ¶ÈÖµ±»¼ÆËã³öÀ´ºó£¬»áÓÃÓÚÕ³ĞÔÍ¨Á¿¼ÆËã£¬¸ÃÖµÊ¹ÓÃºóÏÂÒ»·½Ïò»áÖØĞÂ¸³0¼ÆËã
+#ifdef EXPANDED
+}
+#endif
+	// è¯¥æ–¹å‘ç•Œé¢æ¢¯åº¦å€¼è¢«è®¡ç®—å‡ºæ¥åï¼Œä¼šç”¨äºç²˜æ€§é€šé‡è®¡ç®—ï¼Œè¯¥å€¼ä½¿ç”¨åä¸‹ä¸€æ–¹å‘ä¼šé‡æ–°èµ‹0è®¡ç®—
 #undef LOC3D
 #undef LOC4D
 	}
 	//----------------------------------------------------
-	//ÒÔÏÂÎªÕıÈ·ĞÔ¶Ô±È²¿·Ö£¬²»¿ÉĞŞ¸Ä£¡
+	//ä»¥ä¸‹ä¸ºæ­£ç¡®æ€§å¯¹æ¯”éƒ¨åˆ†ï¼Œä¸å¯ä¿®æ”¹ï¼
 	//----------------------------------------------------
 	end=rdtsc();
 	elapsed= (end - start)/(F*Time);
