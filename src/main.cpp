@@ -181,6 +181,8 @@ int main()
 
 	cout << D.first() << " " << D.last() << endl;
 
+	// #define PRE_CAL_CONV
+
 	RDouble* Pxmul_dim1_sum = &xmul_dim1_sum[0];
 	RDouble* Pymul_dim1_sum = &ymul_dim1_sum[0];
 	RDouble* Pzmul_dim1_sum = &zmul_dim1_sum[0];
@@ -254,6 +256,7 @@ int main()
 		cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
 	}
 
+	#ifdef PRE_CAL_CONV
 	for ( int m = M.first(); m <= M.last(); ++ m ) {
 		#pragma omp for nowait
 		for(int k = 1; k <= nk+1; ++k) {
@@ -274,6 +277,7 @@ int main()
 		elapsed= (end - start)/(F*Time);
 		cout<<"The precal elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
 	}
+	#endif
 
 	#pragma omp for nowait
 	for(int k = 1; k <= nk; ++k) {
@@ -364,6 +368,7 @@ int main()
 						Pdqdy_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Py_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Pz_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 					}
+					#ifdef PRE_CAL_CONV
 					#pragma ivdep
 					#pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i) {
@@ -384,6 +389,35 @@ int main()
 						Pdqdy_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Py_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
 						Pdqdz_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Pz_dim_sum[A_4D(i,j,k,ns3)] * Pq_4d_conv3[A_4D(i,j,k,m)];
 					}
+					#else
+					#pragma ivdep
+					#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {
+						RDouble temp0 = fourth * ( \
+							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
+							Pq_4d[A4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[A4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
+
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdy_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Py_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdz_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Pz_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+					}
+					#pragma ivdep
+					#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {
+						RDouble temp1 = fourth * ( \
+							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
+							Pq_4d[A4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[A4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdy_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Py_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdz_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Pz_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+					}
+					#endif
 				}
 			}
 		}
