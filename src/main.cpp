@@ -191,24 +191,27 @@ int main()
 #pragma ivdep
 #pragma vector aligned
 				for(int i = 1; i <= ni+1; ++i) {
+					RDouble tempX = Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
+					RDouble tempY = Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
+					RDouble tempZ = Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
 					PxdaPlusXdaShiftI[MLOC4D(i,j,k,d)] = \
-						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+						tempX + Pxfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
 					PydaPlusYdaShiftI[MLOC4D(i,j,k,d)] = \
-						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+						tempY + Pyfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
 					PzdaPlusZdaShiftI[MLOC4D(i,j,k,d)] = \
-						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+						tempZ + Pzfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
 					PxdaPlusXdaShiftJ[MLOC4D(i,j,k,d)] = \
-						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+						tempX + Pxfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
 					PydaPlusYdaShiftJ[MLOC4D(i,j,k,d)] = \
-						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+						tempY + Pyfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
 					PzdaPlusZdaShiftJ[MLOC4D(i,j,k,d)] = \
-						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+						tempZ + Pzfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
 					PxdaPlusXdaShiftK[MLOC4D(i,j,k,d)] = \
-						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+						tempX + Pxfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
 					PydaPlusYdaShiftK[MLOC4D(i,j,k,d)] = \
-						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+						tempY + Pyfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
 					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = \
-						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+						tempZ + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
 				}
 			}
 		}
