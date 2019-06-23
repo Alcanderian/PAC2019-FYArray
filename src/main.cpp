@@ -127,18 +127,6 @@ int main()
 	// 希望参赛队伍在理解该算法的基础上，实现更高效的界面梯度求解，提升程序执行效率
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
-	RDouble3D worksx(I,J,K,fortranArray);
-	RDouble3D worksy(I,J,K,fortranArray);
-	RDouble3D worksz(I,J,K,fortranArray);
-	RDouble3D workqm(I,J,K,fortranArray);
-
-	RDouble4D xfnDotArea(I,J,K,D,fortranArray);
-	RDouble4D yfnDotArea(I,J,K,D,fortranArray);
-	RDouble4D zfnDotArea(I,J,K,D,fortranArray);
-	RDouble* PxfnDotArea = &xfnDotArea[0];
-	RDouble* PyfnDotArea = &yfnDotArea[0];
-	RDouble* PzfnDotArea = &zfnDotArea[0];
-
 	Range II(1,ni+1);
 	Range JJ(1,nj+1);
 	Range KK(1,nk+1);
@@ -172,11 +160,7 @@ int main()
 	zPzS[1][0][0] = &zdaPlusZdaShiftI[0];
 	zPzS[0][1][0] = &zdaPlusZdaShiftJ[0];
 	zPzS[0][0][1] = &zdaPlusZdaShiftK[0];
-	
-	RDouble* Pworksx = &worksx[0];
-	RDouble* Pworksy = &worksy[0];
-	RDouble* Pworksz = &worksz[0];
-	RDouble* Pworkqm = &workqm[0];
+
 	RDouble* Pdqdx_4d = &dqdx_4d[0];
 	RDouble* Pdqdy_4d = &dqdy_4d[0];
 	RDouble* Pdqdz_4d = &dqdz_4d[0];
@@ -202,36 +186,29 @@ int main()
 	for ( int d = 1; d <= 3; ++ d )
 	{
 #pragma omp for
-		for(int k = -1; k <= nk+1; ++k) {
-			for(int j = -1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-				for(int i = -1; i <= ni+1; ++i) {
-					PxfnDotArea[LOC4D(i,j,k,d)] = Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-					PyfnDotArea[LOC4D(i,j,k,d)] = Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-					PzfnDotArea[LOC4D(i,j,k,d)] = Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-				}
-			}
-		}
-	}
-
-	for ( int d = 1; d <= 3; ++ d )
-	{
-#pragma omp for
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
 #pragma vector aligned
 				for(int i = 1; i <= ni+1; ++i) {
-					PxdaPlusXdaShiftI[MLOC4D(i,j,k,d)] = PxfnDotArea[LOC4D(i,j,k,d)] + PxfnDotArea[LOC4D(i-1,j,k,d)];
-					PzdaPlusZdaShiftI[MLOC4D(i,j,k,d)] = PzfnDotArea[LOC4D(i,j,k,d)] + PzfnDotArea[LOC4D(i-1,j,k,d)];
-					PydaPlusYdaShiftI[MLOC4D(i,j,k,d)] = PyfnDotArea[LOC4D(i,j,k,d)] + PyfnDotArea[LOC4D(i-1,j,k,d)];
-					PxdaPlusXdaShiftJ[MLOC4D(i,j,k,d)] = PxfnDotArea[LOC4D(i,j,k,d)] + PxfnDotArea[LOC4D(i,j-1,k,d)];
-					PydaPlusYdaShiftJ[MLOC4D(i,j,k,d)] = PyfnDotArea[LOC4D(i,j,k,d)] + PyfnDotArea[LOC4D(i,j-1,k,d)];
-					PzdaPlusZdaShiftJ[MLOC4D(i,j,k,d)] = PzfnDotArea[LOC4D(i,j,k,d)] + PzfnDotArea[LOC4D(i,j-1,k,d)];
-					PxdaPlusXdaShiftK[MLOC4D(i,j,k,d)] = PxfnDotArea[LOC4D(i,j,k,d)] + PxfnDotArea[LOC4D(i,j,k-1,d)];
-					PydaPlusYdaShiftK[MLOC4D(i,j,k,d)] = PyfnDotArea[LOC4D(i,j,k,d)] + PyfnDotArea[LOC4D(i,j,k-1,d)];
-					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = PzfnDotArea[LOC4D(i,j,k,d)] + PzfnDotArea[LOC4D(i,j,k-1,d)];
+					PxdaPlusXdaShiftI[MLOC4D(i,j,k,d)] = \
+						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PydaPlusYdaShiftI[MLOC4D(i,j,k,d)] = \
+						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PzdaPlusZdaShiftI[MLOC4D(i,j,k,d)] = \
+						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PxdaPlusXdaShiftJ[MLOC4D(i,j,k,d)] = \
+						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PydaPlusYdaShiftJ[MLOC4D(i,j,k,d)] = \
+						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PzdaPlusZdaShiftJ[MLOC4D(i,j,k,d)] = \
+						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PxdaPlusXdaShiftK[MLOC4D(i,j,k,d)] = \
+						Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pxfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+					PydaPlusYdaShiftK[MLOC4D(i,j,k,d)] = \
+						Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pyfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = \
+						Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
 				}
 			}
 		}
