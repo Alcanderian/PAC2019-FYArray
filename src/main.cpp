@@ -120,6 +120,20 @@ int main()
 	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
 	#define A3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 
+	// index calculation split
+	#define AD4(i3) ((i3) * s3)
+	#define AD3(i2) ((i2) * s2)
+	#define AD2(i1) ((i1) * s1)
+	#define AD1(i0) ((i0) * s0)
+	#define A_D4(i3) ((i3) * s_3)
+	#define A_D3(i2) ((i2) * s_2)
+	#define A_D2(i1) ((i1) * s_1)
+	#define A_D1(i0) ((i0) * s_0)
+	#define A0D3(i2) ((i2) * s02)
+	#define A0D2(i1) ((i1) * s01)
+	#define A0D1(i0) ((i0) * s00)
+
+
 	const int s0 = 1;
 	const int s1 = s0 * (ni + 3);
 	const int s2 = s1 * (nj + 3);
@@ -225,54 +239,42 @@ int main()
 
 	#pragma omp parallel
 	{
-
 	const int d_k_range = (D.last() - D.first() + 1) * (nk + 1);
-
-	// #pragma omp for nowait
-	// for (int dk = 0; dk < d_k_range; dk++)
-	// {
-	// 	int d = D.first() + dk / (nk + 1);
-	// 	int k = dk % (nk + 1) + 1;
-	// 	for(int j = 1; j <= nj+1; ++j) {
-	// 		#pragma ivdep
-	// 		#pragma vector aligned
-	// 		for(int i = 1; i <= ni+1; ++i) {
-	// 			RDouble tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-	// 			RDouble tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-	// 			RDouble tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-	// 			Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-	// 			Pymul_dim1_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-	// 			Pzmul_dim1_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-	// 			Pxmul_dim2_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-	// 			Pymul_dim2_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-	// 			Pzmul_dim2_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-	// 			Pxmul_dim3_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-	// 			Pymul_dim3_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-	// 			Pzmul_dim3_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-	// 		}
-	// 	}
-	// }
 
 	for ( int d = D.first(); d <= D.last(); ++ d )
 	{
+		int d_4 = A_D4(d);
+		int d4 = AD4(d);
 		#pragma omp for nowait
 		for(int k = 1; k <= nk+1; ++k) {
+			int d_3 = d_4 + A_D3(k);
+			int d3 = d4 + AD3(k);
+			int d3md3 = d4 + AD3(k-1);
 			for(int j = 1; j <= nj+1; ++j) {
+				int d_2 = d_3 + A_D2(j);
+				int d2 = d3 + AD2(j);
+				int d2md2 = d3 + AD2(j-1);
+				int d2md3 = d3md3 + AD2(j);
 				#pragma ivdep
 				#pragma vector aligned
 				for(int i = 1; i <= ni+1; ++i) {
-					RDouble tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					RDouble tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					RDouble tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-					Pymul_dim1_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-					Pzmul_dim1_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-					Pxmul_dim2_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-					Pymul_dim2_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-					Pzmul_dim2_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-					Pxmul_dim3_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-					Pymul_dim3_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-					Pzmul_dim3_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					int d_1 = d_2 + A_D1(i);
+					int d1 = d2 + AD1(i);
+					int d1md1 = d2 + AD1(i-1);
+					int d1md2 = d2md2 + AD1(i);
+					int d1md3 = d2md3 + AD1(i);
+					RDouble tmp000x = Pxfn[d1] * Parea[d1];
+					RDouble tmp000y = Pyfn[d1] * Parea[d1];
+					RDouble tmp000z = Pzfn[d1] * Parea[d1];
+					Pxmul_dim1_sum[d_1] = tmp000x + Pxfn[d1md1] * Parea[d1md1];
+					Pymul_dim1_sum[d_1] = tmp000y + Pyfn[d1md1] * Parea[d1md1];
+					Pzmul_dim1_sum[d_1] = tmp000z + Pzfn[d1md1] * Parea[d1md1];
+					Pxmul_dim2_sum[d_1] = tmp000x + Pxfn[d1md2] * Parea[d1md2];
+					Pymul_dim2_sum[d_1] = tmp000y + Pyfn[d1md2] * Parea[d1md2];
+					Pzmul_dim2_sum[d_1] = tmp000z + Pzfn[d1md2] * Parea[d1md2];
+					Pxmul_dim3_sum[d_1] = tmp000x + Pxfn[d1md3] * Parea[d1md3];
+					Pymul_dim3_sum[d_1] = tmp000y + Pyfn[d1md3] * Parea[d1md3];
+					Pzmul_dim3_sum[d_1] = tmp000z + Pzfn[d1md3] * Parea[d1md3];
 				}
 			}
 		}
