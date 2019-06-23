@@ -334,7 +334,8 @@ int main()
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			#pragma omp for
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					memset((void*)&Pdqdx_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
@@ -343,10 +344,12 @@ int main()
 				}
 			}
 		}
+		#pragma omp barrier  // NOWAIT_BARRIER
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			#pragma omp for
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
@@ -389,10 +392,12 @@ int main()
 				}
 			}
 		}
+		#pragma omp barrier  // NOWAIT_BARRIER
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-			#pragma omp for
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
 			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 					#pragma ivdep
@@ -405,6 +410,7 @@ int main()
 				}
 			}
 		}
+		#pragma omp barrier  // NOWAIT_BARRIER
 	}
 	}
 	}
@@ -426,8 +432,7 @@ int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d)
 		cout << "Error opening check file! ";
 		exit(1);
 	}
-		// #pragma omp parallel for
-		// for ( int i = 0; i < ni; ++ i )
+	// for ( int i = 0; i < ni; ++ i )
 	for ( int i = 0; i < 2; ++ i )
 	{
 			for ( int j = 0; j < nj; ++ j )
