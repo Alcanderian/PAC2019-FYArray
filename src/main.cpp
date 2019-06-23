@@ -332,10 +332,11 @@ int main()
 		const RDouble* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
 		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
 
-		#pragma omp for  // NORMAL_BARRIER
-		for(int k = 1; k <= nk+1; ++k) {
-			for ( int m = mst; m <= med; ++ m ) {
-			// #pragma omp for nowait  // NOWAIT_BARRIER
+		for ( int m = mst; m <= med; ++ m )
+		{
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
+			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					memset((void*)&Pdqdx_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
 					memset((void*)&Pdqdy_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
@@ -343,13 +344,13 @@ int main()
 				}
 			}
 		}
-		// #pragma omp barrier  // NOWAIT_BARRIER
+		#pragma omp barrier  // NOWAIT_BARRIER
 
-		#pragma omp for  // NORMAL_BARRIER
-		for(int k = 1; k <= nk+1; ++k) {
-			for ( int m = mst; m <= med; ++ m )
-			{
-			// #pragma omp for nowait  // NOWAIT_BARRIER
+		for ( int m = mst; m <= med; ++ m )
+		{
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
+			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					#pragma ivdep
 					#pragma vector aligned
@@ -391,13 +392,13 @@ int main()
 				}
 			}
 		}
-		// #pragma omp barrier  // NOWAIT_BARRIER
+		#pragma omp barrier  // NOWAIT_BARRIER
 
-		#pragma omp for  // NORMAL_BARRIER
-		for(int k = 1; k <= nk; ++k) {
-			for ( int m = mst; m <= med; ++ m )
-			{
-			// #pragma omp for nowait  // NOWAIT_BARRIER
+		for ( int m = mst; m <= med; ++ m )
+		{
+			#pragma omp for nowait  // NOWAIT_BARRIER
+			// #pragma omp for  // NORMAL_BARRIER
+			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 					#pragma ivdep
 					#pragma vector aligned
@@ -409,7 +410,7 @@ int main()
 				}
 			}
 		}
-		// #pragma omp barrier  // NOWAIT_BARRIER
+		#pragma omp barrier  // NOWAIT_BARRIER
 	}
 	}
 	}
