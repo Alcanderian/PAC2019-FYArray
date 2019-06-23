@@ -23,6 +23,7 @@ typedef FYArray<RDouble ,4> RDouble4D;
 #define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 #define MLOC4D(i0, i1, i2, i3)	((i0) * ms0 + (i1) * ms1 + (i2) * ms2 + (i3) * ms3)
 #define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
+#define SLOC3D(i0, i1, i2)	((i0) * ss0 + (i1) * ss1 + (i2) * ss2)
 
 int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d);
 
@@ -161,6 +162,20 @@ int main()
 	zPzS[0][1][0] = &zdaPlusZdaShiftJ[0];
 	zPzS[0][0][1] = &zdaPlusZdaShiftK[0];
 
+	Range I0(1,ni);
+	Range J0(1,nj);
+	Range K0(1,nk);
+	RDouble3D revVolPlusVolShiftI(I0,J0,K0,fortranArray);
+	RDouble3D revVolPlusVolShiftJ(I0,J0,K0,fortranArray);
+	RDouble3D revVolPlusVolShiftK(I0,J0,K0,fortranArray);
+	RDouble* PrevVolPlusVolShiftI = &revVolPlusVolShiftI[0];
+	RDouble* PrevVolPlusVolShiftJ = &revVolPlusVolShiftJ[0];
+	RDouble* PrevVolPlusVolShiftK = &revVolPlusVolShiftK[0];
+	RDouble* rvPvS[2][2][2];
+	rvPvS[1][0][0] =  &revVolPlusVolShiftI[0];
+	rvPvS[0][1][0] =  &revVolPlusVolShiftJ[0];
+	rvPvS[0][0][1] =  &revVolPlusVolShiftK[0];
+
 	RDouble* Pdqdx_4d = &dqdx_4d[0];
 	RDouble* Pdqdy_4d = &dqdy_4d[0];
 	RDouble* Pdqdz_4d = &dqdz_4d[0];
@@ -181,11 +196,16 @@ int main()
 	const int ms2 = ms1 * (nj + 1);
 	const int ms3 = ms2 * (nk + 1);
 
+	const int ss0 = 1;
+	const int ss1 = ss0 * ni;
+	const int ss2 = ss1 * nj;
+	const int ss3 = ss2 * nk;
+
 #pragma omp parallel
 {
 	for ( int d = 1; d <= 3; ++ d )
 	{
-#pragma omp for
+#pragma omp for nowait
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -213,6 +233,19 @@ int main()
 					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = \
 						tempZ + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
 				}
+			}
+		}
+	}
+
+#pragma omp for nowait
+	for(int k = 1; k <= nk; ++k) {
+		for(int j = 1; j <= nj; ++j) {
+#pragma ivdep
+#pragma vector aligned
+			for(int i = 1; i <= ni; ++i) {
+				revVolPlusVolShiftI[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-1,j,k)]);
+				revVolPlusVolShiftJ[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i,j-1,k)]);
+				revVolPlusVolShiftK[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i,j,k-1)]);
 			}
 		}
 	}
@@ -261,7 +294,7 @@ int main()
 		Range M(mst,med);
 
 		for ( int m = mst; m <= med; ++ m ) {
-#pragma omp for
+#pragma omp for nowait
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 					memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
@@ -270,13 +303,15 @@ int main()
 				}
 			}
 		}
+#pragma omp barrier
 		
 		RDouble* PxPxS = xPxS[il1][jl1][kl1];
 		RDouble* PyPyS = yPyS[il1][jl1][kl1];
 		RDouble* PzPzS = zPzS[il1][jl1][kl1];
+		RDouble* PrvPvS = rvPvS[il1][jl1][kl1];
 		for ( int m = mst; m <= med; ++ m )
 		{
-#pragma omp for
+#pragma omp for nowait
 			for(int k = 1; k <= nk+1; ++k) {
 				for(int j = 1; j <= nj+1; ++j) {
 #pragma ivdep
@@ -341,24 +376,24 @@ int main()
 				}
 			}
 		}
-		
+#pragma omp barrier	
 
 		for ( int m = mst; m <= med; ++ m )
 		{
-#pragma omp for
+#pragma omp for nowait
 			for(int k = 1; k <= nk; ++k) {
 				for(int j = 1; j <= nj; ++j) {
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni; ++i) {
-						RDouble temp = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
-						Pdqdx_4d[LOC4D(i,j,k,m)] *= temp;
-						Pdqdy_4d[LOC4D(i,j,k,m)] *= temp;
-						Pdqdz_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdx_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
+						Pdqdy_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
+						Pdqdz_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
 					}
 				}
 			}
 		}
+#pragma omp barrier
 	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
 	}
 }
