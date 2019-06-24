@@ -1,8 +1,8 @@
 TARGET=FYArray.exe
 
 CXX=icpc
-CXXFLAGS=-O3 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g -qopenmp
-LDFLAGS=-O3 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g -qopenmp
+CXXFLAGS=-std=c++17 -O3 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g -qopenmp
+LDFLAGS= -ltbbmalloc_proxy -std=c++17 -O3 -xHost -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high -g -qopenmp
 
 INCLUDE=../include
 
