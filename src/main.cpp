@@ -20,6 +20,11 @@ typedef double RDouble;
 typedef FYArray<RDouble ,3> RDouble3D;
 typedef FYArray<RDouble ,4> RDouble4D;
 
+#define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
+#define MLOC4D(i0, i1, i2, i3)	((i0) * ms0 + (i1) * ms1 + (i2) * ms2 + (i3) * ms3)
+#define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
+#define SLOC3D(i0, i1, i2)	((i0) * ss0 + (i1) * ss1 + (i2) * ss2)
+
 int preccheck(RDouble4D dqdx_4d,RDouble4D dqdy_4d,RDouble4D dqdz_4d);
 
 inline unsigned long long rdtsc(void)
@@ -123,20 +128,130 @@ int main()
 	// 希望参赛队伍在理解该算法的基础上，实现更高效的界面梯度求解，提升程序执行效率
 	// --------------------------------------------------------------------
 	// 此处开始统计计算部分代码运行时间
-	RDouble3D worksx(I,J,K,fortranArray);
-	RDouble3D worksy(I,J,K,fortranArray);
-	RDouble3D worksz(I,J,K,fortranArray);
-	RDouble3D workqm(I,J,K,fortranArray);
-#define EXPANDED
-#ifdef EXPANDED
+	Range II(1,ni+1);
+	Range JJ(1,nj+1);
+	Range KK(1,nk+1);
+	RDouble4D xdaPlusXdaShiftI(II,JJ,KK,D,fortranArray);
+	RDouble4D xdaPlusXdaShiftJ(II,JJ,KK,D,fortranArray);
+	RDouble4D xdaPlusXdaShiftK(II,JJ,KK,D,fortranArray);
+	RDouble4D ydaPlusYdaShiftI(II,JJ,KK,D,fortranArray);
+	RDouble4D ydaPlusYdaShiftJ(II,JJ,KK,D,fortranArray);
+	RDouble4D ydaPlusYdaShiftK(II,JJ,KK,D,fortranArray);
+	RDouble4D zdaPlusZdaShiftI(II,JJ,KK,D,fortranArray);
+	RDouble4D zdaPlusZdaShiftJ(II,JJ,KK,D,fortranArray);
+	RDouble4D zdaPlusZdaShiftK(II,JJ,KK,D,fortranArray);
+	RDouble* xPxS[2][2][2];
+	RDouble* yPyS[2][2][2];
+	RDouble* zPzS[2][2][2];
+	RDouble* PxdaPlusXdaShiftI = &xdaPlusXdaShiftI[0];
+	RDouble* PxdaPlusXdaShiftJ = &xdaPlusXdaShiftJ[0];
+	RDouble* PxdaPlusXdaShiftK = &xdaPlusXdaShiftK[0];
+	RDouble* PydaPlusYdaShiftI = &ydaPlusYdaShiftI[0];
+	RDouble* PydaPlusYdaShiftJ = &ydaPlusYdaShiftJ[0];
+	RDouble* PydaPlusYdaShiftK = &ydaPlusYdaShiftK[0];
+	RDouble* PzdaPlusZdaShiftI = &zdaPlusZdaShiftI[0];
+	RDouble* PzdaPlusZdaShiftJ = &zdaPlusZdaShiftJ[0];
+	RDouble* PzdaPlusZdaShiftK = &zdaPlusZdaShiftK[0];
+	xPxS[1][0][0] = &xdaPlusXdaShiftI[0];
+	xPxS[0][1][0] = &xdaPlusXdaShiftJ[0];
+	xPxS[0][0][1] = &xdaPlusXdaShiftK[0];
+	yPyS[1][0][0] = &ydaPlusYdaShiftI[0];
+	yPyS[0][1][0] = &ydaPlusYdaShiftJ[0];
+	yPyS[0][0][1] = &ydaPlusYdaShiftK[0];
+	zPzS[1][0][0] = &zdaPlusZdaShiftI[0];
+	zPzS[0][1][0] = &zdaPlusZdaShiftJ[0];
+	zPzS[0][0][1] = &zdaPlusZdaShiftK[0];
+
+	Range I0(1,ni);
+	Range J0(1,nj);
+	Range K0(1,nk);
+	RDouble3D revVolPlusVolShiftI(I0,J0,K0,fortranArray);
+	RDouble3D revVolPlusVolShiftJ(I0,J0,K0,fortranArray);
+	RDouble3D revVolPlusVolShiftK(I0,J0,K0,fortranArray);
+	RDouble* PrevVolPlusVolShiftI = &revVolPlusVolShiftI[0];
+	RDouble* PrevVolPlusVolShiftJ = &revVolPlusVolShiftJ[0];
+	RDouble* PrevVolPlusVolShiftK = &revVolPlusVolShiftK[0];
+	RDouble* rvPvS[2][2][2];
+	rvPvS[1][0][0] =  &revVolPlusVolShiftI[0];
+	rvPvS[0][1][0] =  &revVolPlusVolShiftJ[0];
+	rvPvS[0][0][1] =  &revVolPlusVolShiftK[0];
+
+	RDouble* Pdqdx_4d = &dqdx_4d[0];
+	RDouble* Pdqdy_4d = &dqdy_4d[0];
+	RDouble* Pdqdz_4d = &dqdz_4d[0];
+	const RDouble* Pxfn = &xfn[0];
+	const RDouble* Pyfn = &yfn[0];
+	const RDouble* Pzfn = &zfn[0];
+	const RDouble* Parea = &area[0];
+	const RDouble* Pq_4d = &q_4d[0];
+	const RDouble* Pvol = &vol[0];
+
+	const int s0 = 1;
+	const int s1 = s0 * (ni + 3);
+	const int s2 = s1 * (nj + 3);
+	const int s3 = s2 * (nk + 3);
+
+	const int ms0 = 1;
+	const int ms1 = ms0 * (ni + 1);
+	const int ms2 = ms1 * (nj + 1);
+	const int ms3 = ms2 * (nk + 1);
+
+	const int ss0 = 1;
+	const int ss1 = ss0 * ni;
+	const int ss2 = ss1 * nj;
+	const int ss3 = ss2 * nk;
+
 #pragma omp parallel
 {
-#endif
+	for ( int d = 1; d <= 3; ++ d )
+	{
+#pragma omp for nowait
+		for(int k = 1; k <= nk+1; ++k) {
+			for(int j = 1; j <= nj+1; ++j) {
+#pragma ivdep
+#pragma vector aligned
+				for(int i = 1; i <= ni+1; ++i) {
+					RDouble tempX = Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
+					RDouble tempY = Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
+					RDouble tempZ = Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
+					PxdaPlusXdaShiftI[MLOC4D(i,j,k,d)] = \
+						tempX + Pxfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PydaPlusYdaShiftI[MLOC4D(i,j,k,d)] = \
+						tempY + Pyfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PzdaPlusZdaShiftI[MLOC4D(i,j,k,d)] = \
+						tempZ + Pzfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
+					PxdaPlusXdaShiftJ[MLOC4D(i,j,k,d)] = \
+						tempX + Pxfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PydaPlusYdaShiftJ[MLOC4D(i,j,k,d)] = \
+						tempY + Pyfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PzdaPlusZdaShiftJ[MLOC4D(i,j,k,d)] = \
+						tempZ + Pzfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
+					PxdaPlusXdaShiftK[MLOC4D(i,j,k,d)] = \
+						tempX + Pxfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+					PydaPlusYdaShiftK[MLOC4D(i,j,k,d)] = \
+						tempY + Pyfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = \
+						tempZ + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
+				}
+			}
+		}
+	}
+
+#pragma omp for nowait
+	for(int k = 1; k <= nk; ++k) {
+		for(int j = 1; j <= nj; ++j) {
+#pragma ivdep
+#pragma vector aligned
+			for(int i = 1; i <= ni; ++i) {
+				revVolPlusVolShiftI[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-1,j,k)]);
+				revVolPlusVolShiftJ[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i,j-1,k)]);
+				revVolPlusVolShiftK[SLOC3D(i,j,k)] = 1.0 / (Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i,j,k-1)]);
+			}
+		}
+	}
+
 	for ( int nsurf = 1; nsurf <= THREE_D; ++ nsurf )
 	{
-
-#define LOC4D(i0, i1, i2, i3)	((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
-#define LOC3D(i0, i1, i2)		((i0) * s0 + (i1) * s1 + (i2) * s2)
 		Range I(1,ni+1);
 		Range J(1,nj+1);
 		Range K(1,nk+1);
@@ -178,289 +293,112 @@ int main()
 
 		Range M(mst,med);
 
-#ifdef EXPANDED
-		RDouble* Pworksx = &worksx[0];
-		RDouble* Pworksy = &worksy[0];
-		RDouble* Pworksz = &worksz[0];
-		RDouble* Pworkqm = &workqm[0];
-		RDouble* Pdqdx_4d = &dqdx_4d[0];
-		RDouble* Pdqdy_4d = &dqdy_4d[0];
-		RDouble* Pdqdz_4d = &dqdz_4d[0];
-		const RDouble* Pxfn = &xfn[0];
-		const RDouble* Pyfn = &yfn[0];
-		const RDouble* Pzfn = &zfn[0];
-		const RDouble* Parea = &area[0];
-		const RDouble* Pq_4d = &q_4d[0];
-		const RDouble* Pvol = &vol[0];
-
-		const int s0 = 1;
-		const int s1 = s0 * (ni + 3);
-		const int s2 = s1 * (nj + 3);
-		const int s3 = s2 * (nk + 3);
-#endif
-
-#ifdef EXPANDED
-		for ( int m = mst; m <= med; ++ m ) {
-#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-					memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
-					memset(&Pdqdy_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
-					memset(&Pdqdz_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
+		if ( nsurf != 1 ) { // no need reset first time
+			for ( int m = mst; m <= med; ++ m ) {
+#pragma omp for nowait
+				for(int k = 1; k <= nk+1; ++k) {
+					for(int j = 1; j <= nj+1; ++j) {
+						memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+						memset(&Pdqdy_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+						memset(&Pdqdz_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+					}
 				}
 			}
+#pragma omp barrier
 		}
-#else
-		dqdx_4d(I,J,K,M) = 0.0;
-		dqdy_4d(I,J,K,M) = 0.0;
-		dqdz_4d(I,J,K,M) = 0.0;
-#endif
-
-#ifdef EXPANDED
-#pragma omp for
+		
+		RDouble* PxPxS = xPxS[il1][jl1][kl1];
+		RDouble* PyPyS = yPyS[il1][jl1][kl1];
+		RDouble* PzPzS = zPzS[il1][jl1][kl1];
+		RDouble* PrvPvS = rvPvS[il1][jl1][kl1];
+		
+#pragma omp for nowait
 		for(int k = 1; k <= nk+1; ++k) {
 			for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-				for(int i = 1; i <= ni+1; ++i) {
-					Pworksx[LOC3D(i,j,k)] = \
-						Pxfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
-						Pxfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
-					Pworksy[LOC3D(i,j,k)] = \
-						Pyfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
-						Pyfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
-					Pworksz[LOC3D(i,j,k)] = \
-						Pzfn[LOC4D(i,j,k,ns1)] * Parea[LOC4D(i,j,k,ns1)] + \
-						Pzfn[LOC4D(i-il1,j-jl1,k-kl1,ns1)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns1)];
-				}
-			}
-		}
-#else
-		worksx(I,J,K) = xfn(I,J,K,ns1) * area(I,J,K,ns1) + xfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-		worksy(I,J,K) = yfn(I,J,K,ns1) * area(I,J,K,ns1) + yfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-		worksz(I,J,K) = zfn(I,J,K,ns1) * area(I,J,K,ns1) + zfn(I-il1,J-jl1,K-kl1,ns1) * area(I-il1,J-jl1,K-kl1,ns1);
-#endif
-		
-#ifdef EXPANDED
-		for ( int m = mst; m <= med; ++ m )
-		{
-#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
+				for ( int m = mst; m <= med; ++ m ) { // exchange loop for PxPxS,PyPyS,PzPzS cache friendly.
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i) {
 						Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-							Pworksx[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PxPxS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-							Pworksy[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PyPyS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-							Pworksz[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PzPzS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 
 						Pdqdx_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
-							Pworksx[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PxPxS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
-							Pworksy[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PyPyS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] += \
-							Pworksz[LOC3D(i,j,k)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
+							PzPzS[MLOC4D(i,j,k,ns1)] * Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)];
 					}
-				}
-			}
-		}
-#else
-		for ( int m = mst; m <= med; ++ m )
-		{
-			dqdx_4d(I,J,K,m) = - worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdy_4d(I,J,K,m) = - worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdz_4d(I,J,K,m) = - worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-		}
+#pragma ivdep
+#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {							
+						RDouble temp0 = fourth * ( \
+							Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
+							Pq_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[LOC4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
 
-		for ( int m = mst; m <= med; ++ m )
-		{
-			dqdx_4d(I-il1,J-jl1,K-kl1,m) += worksx(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdy_4d(I-il1,J-jl1,K-kl1,m) += worksy(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-			dqdz_4d(I-il1,J-jl1,K-kl1,m) += worksz(I,J,K) * q_4d(I-il1,J-jl1,K-kl1,m);
-		}
-#endif
+						Pdqdx_4d[LOC4D(i,j,k,m)] -= \
+							PxPxS[MLOC4D(i,j,k,ns2)] * temp0;
+						Pdqdy_4d[LOC4D(i,j,k,m)] -= \
+							PyPyS[MLOC4D(i,j,k,ns2)] * temp0;
+						Pdqdz_4d[LOC4D(i,j,k,m)] -= \
+							PzPzS[MLOC4D(i,j,k,ns2)] * temp0;
 
-		if ( ( nsurf != 2 ) || ( nDim != TWO_D ) )
-		{
-#ifdef EXPANDED
-#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
+						Pdqdx_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
+							PxPxS[MLOC4D(i,j,k,ns2)] * temp0;
+						Pdqdy_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
+							PyPyS[MLOC4D(i,j,k,ns2)] * temp0;
+						Pdqdz_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
+							PzPzS[MLOC4D(i,j,k,ns2)] * temp0;
+					}
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i) {
-						Pworksx[LOC3D(i,j,k)] = \
-							Pxfn[LOC4D(i,j,k,ns2)] * Parea[LOC4D(i,j,k,ns2)] + \
-							Pxfn[LOC4D(i-il1,j-jl1,k-kl1,ns2)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns2)];
-						Pworksy[LOC3D(i,j,k)] = \
-							Pyfn[LOC4D(i,j,k,ns2)] * Parea[LOC4D(i,j,k,ns2)] + \
-							Pyfn[LOC4D(i-il1,j-jl1,k-kl1,ns2)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns2)];
-						Pworksz[LOC3D(i,j,k)] = \
-							Pzfn[LOC4D(i,j,k,ns2)] * Parea[LOC4D(i,j,k,ns2)] + \
-							Pzfn[LOC4D(i-il1,j-jl1,k-kl1,ns2)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns2)];
+						RDouble temp1 = fourth * ( \
+							Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
+							Pq_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[LOC4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
+
+						Pdqdx_4d[LOC4D(i,j,k,m)] -= \
+							PxPxS[MLOC4D(i,j,k,ns3)] * temp1;
+						Pdqdy_4d[LOC4D(i,j,k,m)] -= \
+							PyPyS[MLOC4D(i,j,k,ns3)] * temp1;
+						Pdqdz_4d[LOC4D(i,j,k,m)] -= \
+							PzPzS[MLOC4D(i,j,k,ns3)] * temp1;
+
+						Pdqdx_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \	
+							PxPxS[MLOC4D(i,j,k,ns3)] * temp1;
+						Pdqdy_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
+							PyPyS[MLOC4D(i,j,k,ns3)] * temp1;
+						Pdqdz_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
+							PzPzS[MLOC4D(i,j,k,ns3)] * temp1;
 					}
 				}
-			}
-#else
-			worksx(I,J,K) = xfn(I,J,K,ns2) * area(I,J,K,ns2) + xfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
-			worksy(I,J,K) = yfn(I,J,K,ns2) * area(I,J,K,ns2) + yfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
-			worksz(I,J,K) = zfn(I,J,K,ns2) * area(I,J,K,ns2) + zfn(I-il1,J-jl1,K-kl1,ns2) * area(I-il1,J-jl1,K-kl1,ns2);
-#endif
-
-			for ( int m = mst; m <= med; ++ m )
-			{
-#ifdef EXPANDED
-#pragma omp for
-				for(int k = 1; k <= nk+1; ++k) {
-					for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-						for(int i = 1; i <= ni+1; ++i) {
-							RDouble temp = fourth * ( \
-								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
-								Pq_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[LOC4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
-
-							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * temp;
-							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * temp;
-							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * temp;
-
-							Pdqdx_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksx[LOC3D(i,j,k)] * temp;
-							Pdqdy_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksy[LOC3D(i,j,k)] * temp;
-							Pdqdz_4d[LOC4D(i-il2,j-jl2,k-kl2,m)] += \
-								Pworksz[LOC3D(i,j,k)] * temp;
-						}
-					}
-				}
-#else
-				workqm(I,J,K) = fourth * ( q_4d(I,J,K,m) + q_4d(I-il1,J-jl1,K-kl1,m) + q_4d(I-il2,J-jl2,K-kl2,m) + q_4d(I-il1-il2,J-jl1-jl2,K-kl1-kl2,m) );
-
-				dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
-
-				dqdx_4d(I-il2,J-jl2,K-kl2,m) += worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I-il2,J-jl2,K-kl2,m) += worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I-il2,J-jl2,K-kl2,m) += worksz(I,J,K) * workqm(I,J,K);
-#endif
 			}
 		}
+#pragma omp barrier	
 
-		if ( ( nsurf != 1 ) || ( nDim != TWO_D ) )
-		{
-#ifdef EXPANDED
-#pragma omp for
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
-						Pworksx[LOC3D(i,j,k)] = \
-							Pxfn[LOC4D(i,j,k,ns3)] * Parea[LOC4D(i,j,k,ns3)] + \
-							Pxfn[LOC4D(i-il1,j-jl1,k-kl1,ns3)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns3)];
-						Pworksy[LOC3D(i,j,k)] = \
-							Pyfn[LOC4D(i,j,k,ns3)] * Parea[LOC4D(i,j,k,ns3)] + \
-							Pyfn[LOC4D(i-il1,j-jl1,k-kl1,ns3)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns3)];
-						Pworksz[LOC3D(i,j,k)] = \
-							Pzfn[LOC4D(i,j,k,ns3)] * Parea[LOC4D(i,j,k,ns3)] + \
-							Pzfn[LOC4D(i-il1,j-jl1,k-kl1,ns3)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,ns3)];
-					}
-				}
-			}
-#else
-			worksx(I,J,K) = xfn(I,J,K,ns3) * area(I,J,K,ns3) + xfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
-			worksy(I,J,K) = yfn(I,J,K,ns3) * area(I,J,K,ns3) + yfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
-			worksz(I,J,K) = zfn(I,J,K,ns3) * area(I,J,K,ns3) + zfn(I-il1,J-jl1,K-kl1,ns3) * area(I-il1,J-jl1,K-kl1,ns3);
-#endif
-
-			for ( int m = mst; m <= med; ++ m )
-			{
-#ifdef EXPANDED
-#pragma omp for
-				for(int k = 1; k <= nk+1; ++k) {
-					for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-						for(int i = 1; i <= ni+1; ++i) {
-							RDouble temp = fourth * ( \
-								Pq_4d[LOC4D(i,j,k,m)] + Pq_4d[LOC4D(i-il1,j-jl1,k-kl1,m)] + \
-								Pq_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[LOC4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
-
-							Pdqdx_4d[LOC4D(i,j,k,m)] -= \
-								Pworksx[LOC3D(i,j,k)] * temp;
-							Pdqdy_4d[LOC4D(i,j,k,m)] -= \
-								Pworksy[LOC3D(i,j,k)] * temp;
-							Pdqdz_4d[LOC4D(i,j,k,m)] -= \
-								Pworksz[LOC3D(i,j,k)] * temp;
-
-							Pdqdx_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \	
-								Pworksx[LOC3D(i,j,k)] * temp;
-							Pdqdy_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksy[LOC3D(i,j,k)] * temp;
-							Pdqdz_4d[LOC4D(i-il3,j-jl3,k-kl3,m)] += \
-								Pworksz[LOC3D(i,j,k)] * temp;
-						}
-					}
-				}
-#else
-				workqm(I,J,K) = fourth * ( q_4d(I,J,K,m) + q_4d(I-il1,J-jl1,K-kl1,m) + q_4d(I-il3,J-jl3,K-kl3,m) + q_4d(I-il1-il3,J-jl1-jl3,K-kl1-kl3,m) );
-
-				dqdx_4d(I,J,K,m) -= worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I,J,K,m) -= worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I,J,K,m) -= worksz(I,J,K) * workqm(I,J,K);
-
-				dqdx_4d(I-il3,J-jl3,K-kl3,m) += worksx(I,J,K) * workqm(I,J,K);
-				dqdy_4d(I-il3,J-jl3,K-kl3,m) += worksy(I,J,K) * workqm(I,J,K);
-				dqdz_4d(I-il3,J-jl3,K-kl3,m) += worksz(I,J,K) * workqm(I,J,K);
-#endif
-			}
-		}
-
-		Range I0(1,ni);
-		Range J0(1,nj);
-		Range K0(1,nk);
-
-#ifdef EXPANDED
-#else
-		workqm(I0,J0,K0) = 1.0 / (  vol(I0, J0, K0) + vol(I0-il1, J0-jl1, K0-kl1) );
-#endif
-
-		for ( int m = mst; m <= med; ++ m )
-		{
-#ifdef EXPANDED
-#pragma omp for
-			for(int k = 1; k <= nk; ++k) {
-				for(int j = 1; j <= nj; ++j) {
+		
+#pragma omp for nowait
+		for(int k = 1; k <= nk; ++k) {
+			for(int j = 1; j <= nj; ++j) {
+				for ( int m = mst; m <= med; ++ m ) {  // exchange loop for PrvPvS cache friendly.
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni; ++i) {
-						RDouble temp = 1.0 / (  Pvol[LOC3D(i,j,k)] + Pvol[LOC3D(i-il1, j-jl1, k-kl1)] );
-						Pdqdx_4d[LOC4D(i,j,k,m)] *= temp;
-						Pdqdy_4d[LOC4D(i,j,k,m)] *= temp;
-						Pdqdz_4d[LOC4D(i,j,k,m)] *= temp;
+						Pdqdx_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
+						Pdqdy_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
+						Pdqdz_4d[LOC4D(i,j,k,m)] *= PrvPvS[SLOC3D(i,j,k)];
 					}
 				}
 			}
-#else
-			dqdx_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
-			dqdy_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
-			dqdz_4d(I0,J0,K0,m) *= workqm(I0,J0,K0);
-#endif
 		}
+#pragma omp barrier
 	// 该方向界面梯度值被计算出来后，会用于粘性通量计算，该值使用后下一方向会重新赋0计算
-#undef LOC3D
-#undef LOC4D
 	}
-#ifdef EXPANDED
 }
-#endif
 	//----------------------------------------------------
 	//以下为正确性对比部分，不可修改！
 	//----------------------------------------------------
