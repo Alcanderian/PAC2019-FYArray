@@ -114,7 +114,7 @@ int main()
 	start=rdtsc();
 
 
-	{
+	// {
 	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
 	#define A_4D(i0, i1, i2, i3)	((i0) * s_0 + (i1) * s_1 + (i2) * s_2 + (i3) * s_3)
 	#define A03D(i0, i1, i2)		((i0) * s00 + (i1) * s01 + (i2) * s02)
@@ -408,7 +408,7 @@ int main()
 		#pragma omp barrier  // NOWAIT_BARRIER
 	}
 	}
-	}
+	// }
 
 	end=rdtsc();
 	elapsed= (end - start)/(F*Time);
