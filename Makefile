@@ -1,16 +1,17 @@
 CHECK_TXT_PATH=~/preliminary/PAC2019
 
 all:
-	cd src&&make
+	cd src&&make clean&&make
 
 run:
-	cd src&&make
+	cd src&&make clean&&make
 	mv FYArray.exe $(CHECK_TXT_PATH)/FYArray.exe
 	cd $(CHECK_TXT_PATH)&&KMP_AFFINITY=compact OMP_NUM_THREADS=34 ./FYArray.exe
 
 vtune:export DATE=$(shell date '+%Y-%m-%d_%H-%M-%S')
 vtune:
-	cd src&&make
+
+	cd src&&make clean&&make
 	mv FYArray.exe $(CHECK_TXT_PATH)/FYArray.exe
 	cd $(CHECK_TXT_PATH)&&KMP_AFFINITY=compact OMP_NUM_THREADS=34 amplxe-cl -collect hotspots -r hs_$(DATE) ./FYArray.exe
 	cp -r src $(CHECK_TXT_PATH)/hs_$(DATE)
