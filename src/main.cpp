@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cmath>
 #include <memory.h>
+#include <omp.h>
 #include "DataStruct_Array.h"
 #define F 2.2E3
 #define Time 1E6
@@ -222,15 +223,38 @@ int main()
 	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
 	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
 
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE(block_id, total_blocks, n) (((n) / (total_blocks)) + (((n) % (total_blocks) > (block_id)) ? 1 : 0))
+#endif
+
+#ifndef BLOCK_LOW
+#define BLOCK_LOW(block_id, total_blocks, n) (((n) / (total_blocks)) * (block_id) + (((n) % (total_blocks) > (block_id)) ? (block_id) : (n) % (total_blocks)))
+#endif
+
 	#pragma omp parallel
 	{
 	const int d_k_range = (D.last() - D.first() + 1) * (nk + 1);
+	int tid = omp_get_thread_num();
+	int nthreads = omp_get_num_threads();
 
-	for ( int d = D.first(); d <= D.last(); ++ d )
+	int my_k_start = BLOCK_LOW(tid, nthreads, nk + 1) + 1;
+	int my_k_end = my_k_start + BLOCK_SIZE(tid, nthreads, nk + 1) - 1;
+
+	// for (int i = 0; i < nthreads; i++)
+	// {
+	// 	if (i == tid)
+	// 	{
+	// 		printf("%d %d %d\n", tid, my_k_start, my_k_end);
+	// 	}
+	// 	#pragma omp barrier
+	// }
+
+	for(int k = my_k_start; k <= my_k_end; ++k)
 	{
-		#pragma omp for nowait
-		for(int k = 1; k <= nk+1; ++k) {
-			for(int j = 1; j <= nj+1; ++j) {
+		for(int j = 1; j <= nj+1; ++j)
+		{
+			for ( int d = D.first(); d <= D.last(); ++ d )
+			{
 				#pragma ivdep
 				#pragma vector aligned
 				for(int i = 1; i <= ni+1; ++i) {
@@ -321,8 +345,7 @@ int main()
 		{
 		for ( int m = mst; m <= med; ++ m )
 		{
-			#pragma omp for nowait  // NOWAIT_BARRIER
-			for(int k = 1; k <= nk+1; ++k)
+			for(int k = my_k_start; k <= my_k_end; ++k)
 			{
 				for(int j = 1; j <= nj+1; ++j)
 				{
@@ -335,8 +358,7 @@ int main()
 		#pragma omp barrier  // NOWAIT_BARRIER
 		}
 
-		#pragma omp for nowait  // NOWAIT_BARRIER
-		for(int k = 1; k <= nk+1; ++k) 
+		for(int k = my_k_start; k <= my_k_end; ++k)
 		{
 			for(int j = 1; j <= nj+1; ++j)
 			{
@@ -405,7 +427,6 @@ int main()
 				}
 			}
 		}
-		#pragma omp barrier  // NOWAIT_BARRIER
 	}
 	}
 	// }
