@@ -309,11 +309,11 @@ int main()
 		RDouble* PyPyS = yPyS[il1][jl1][kl1];
 		RDouble* PzPzS = zPzS[il1][jl1][kl1];
 		RDouble* PrvPvS = rvPvS[il1][jl1][kl1];
-		for ( int m = mst; m <= med; ++ m )
-		{
+		
 #pragma omp for nowait
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
+		for(int k = 1; k <= nk+1; ++k) {
+			for(int j = 1; j <= nj+1; ++j) {
+				for ( int m = mst; m <= med; ++ m ) { // exchange loop for PxPxS,PyPyS,PzPzS cache friendly.
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i) {
@@ -378,11 +378,11 @@ int main()
 		}
 #pragma omp barrier	
 
-		for ( int m = mst; m <= med; ++ m )
-		{
+		
 #pragma omp for nowait
-			for(int k = 1; k <= nk; ++k) {
-				for(int j = 1; j <= nj; ++j) {
+		for(int k = 1; k <= nk; ++k) {
+			for(int j = 1; j <= nj; ++j) {
+				for ( int m = mst; m <= med; ++ m ) {  // exchange loop for PrvPvS cache friendly.
 #pragma ivdep
 #pragma vector aligned
 					for(int i = 1; i <= ni; ++i) {
