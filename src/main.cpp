@@ -131,36 +131,12 @@ int main()
 	Range II(1,ni+1);
 	Range JJ(1,nj+1);
 	Range KK(1,nk+1);
-	RDouble4D xdaPlusXdaShiftI(II,JJ,KK,D,fortranArray);
-	RDouble4D xdaPlusXdaShiftJ(II,JJ,KK,D,fortranArray);
-	RDouble4D xdaPlusXdaShiftK(II,JJ,KK,D,fortranArray);
-	RDouble4D ydaPlusYdaShiftI(II,JJ,KK,D,fortranArray);
-	RDouble4D ydaPlusYdaShiftJ(II,JJ,KK,D,fortranArray);
-	RDouble4D ydaPlusYdaShiftK(II,JJ,KK,D,fortranArray);
-	RDouble4D zdaPlusZdaShiftI(II,JJ,KK,D,fortranArray);
-	RDouble4D zdaPlusZdaShiftJ(II,JJ,KK,D,fortranArray);
-	RDouble4D zdaPlusZdaShiftK(II,JJ,KK,D,fortranArray);
-	RDouble* xPxS[2][2][2];
-	RDouble* yPyS[2][2][2];
-	RDouble* zPzS[2][2][2];
-	RDouble* PxdaPlusXdaShiftI = &xdaPlusXdaShiftI[0];
-	RDouble* PxdaPlusXdaShiftJ = &xdaPlusXdaShiftJ[0];
-	RDouble* PxdaPlusXdaShiftK = &xdaPlusXdaShiftK[0];
-	RDouble* PydaPlusYdaShiftI = &ydaPlusYdaShiftI[0];
-	RDouble* PydaPlusYdaShiftJ = &ydaPlusYdaShiftJ[0];
-	RDouble* PydaPlusYdaShiftK = &ydaPlusYdaShiftK[0];
-	RDouble* PzdaPlusZdaShiftI = &zdaPlusZdaShiftI[0];
-	RDouble* PzdaPlusZdaShiftJ = &zdaPlusZdaShiftJ[0];
-	RDouble* PzdaPlusZdaShiftK = &zdaPlusZdaShiftK[0];
-	xPxS[1][0][0] = &xdaPlusXdaShiftI[0];
-	xPxS[0][1][0] = &xdaPlusXdaShiftJ[0];
-	xPxS[0][0][1] = &xdaPlusXdaShiftK[0];
-	yPyS[1][0][0] = &ydaPlusYdaShiftI[0];
-	yPyS[0][1][0] = &ydaPlusYdaShiftJ[0];
-	yPyS[0][0][1] = &ydaPlusYdaShiftK[0];
-	zPzS[1][0][0] = &zdaPlusZdaShiftI[0];
-	zPzS[0][1][0] = &zdaPlusZdaShiftJ[0];
-	zPzS[0][0][1] = &zdaPlusZdaShiftK[0];
+	RDouble4D xdaPlusXdaShift(II,JJ,KK,D,fortranArray);
+	RDouble4D ydaPlusYdaShift(II,JJ,KK,D,fortranArray);
+	RDouble4D zdaPlusZdaShift(II,JJ,KK,D,fortranArray);
+	RDouble* PxPxS = &xdaPlusXdaShift[0];
+	RDouble* PyPyS = &ydaPlusYdaShift[0];
+	RDouble* PzPzS = &zdaPlusZdaShift[0];
 
 	Range I0(1,ni);
 	Range J0(1,nj);
@@ -203,39 +179,6 @@ int main()
 
 #pragma omp parallel
 {
-	for ( int d = 1; d <= 3; ++ d )
-	{
-#pragma omp for nowait
-		for(int k = 1; k <= nk+1; ++k) {
-			for(int j = 1; j <= nj+1; ++j) {
-#pragma ivdep
-#pragma vector aligned
-				for(int i = 1; i <= ni+1; ++i) {
-					RDouble tempX = Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-					RDouble tempY = Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-					RDouble tempZ = Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)];
-					PxdaPlusXdaShiftI[MLOC4D(i,j,k,d)] = \
-						tempX + Pxfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
-					PydaPlusYdaShiftI[MLOC4D(i,j,k,d)] = \
-						tempY + Pyfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
-					PzdaPlusZdaShiftI[MLOC4D(i,j,k,d)] = \
-						tempZ + Pzfn[LOC4D(i-1,j,k,d)] * Parea[LOC4D(i-1,j,k,d)];
-					PxdaPlusXdaShiftJ[MLOC4D(i,j,k,d)] = \
-						tempX + Pxfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
-					PydaPlusYdaShiftJ[MLOC4D(i,j,k,d)] = \
-						tempY + Pyfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
-					PzdaPlusZdaShiftJ[MLOC4D(i,j,k,d)] = \
-						tempZ + Pzfn[LOC4D(i,j-1,k,d)] * Parea[LOC4D(i,j-1,k,d)];
-					PxdaPlusXdaShiftK[MLOC4D(i,j,k,d)] = \
-						tempX + Pxfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
-					PydaPlusYdaShiftK[MLOC4D(i,j,k,d)] = \
-						tempY + Pyfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
-					PzdaPlusZdaShiftK[MLOC4D(i,j,k,d)] = \
-						tempZ + Pzfn[LOC4D(i,j,k-1,d)] * Parea[LOC4D(i,j,k-1,d)];
-				}
-			}
-		}
-	}
 
 #pragma omp for nowait
 	for(int k = 1; k <= nk; ++k) {
@@ -304,12 +247,31 @@ int main()
 					}
 				}
 			}
-#pragma omp barrier
 		}
-		
-		RDouble* PxPxS = xPxS[il1][jl1][kl1];
-		RDouble* PyPyS = yPyS[il1][jl1][kl1];
-		RDouble* PzPzS = zPzS[il1][jl1][kl1];
+
+		for ( int d = 1; d <= 3; ++ d )
+		{
+#pragma omp for nowait
+			for(int k = 1; k <= nk+1; ++k) {
+				for(int j = 1; j <= nj+1; ++j) {
+#pragma ivdep
+#pragma vector aligned
+					for(int i = 1; i <= ni+1; ++i) {
+						PxPxS[MLOC4D(i,j,k,d)] = \
+							Pxfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + \
+							Pxfn[LOC4D(i-il1,j-jl1,k-kl1,d)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,d)];
+						PyPyS[MLOC4D(i,j,k,d)] = \
+							Pyfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + \
+							Pyfn[LOC4D(i-il1,j-jl1,k-kl1,d)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,d)];
+						PzPzS[MLOC4D(i,j,k,d)] = \
+							Pzfn[LOC4D(i,j,k,d)] * Parea[LOC4D(i,j,k,d)] + \
+							Pzfn[LOC4D(i-il1,j-jl1,k-kl1,d)] * Parea[LOC4D(i-il1,j-jl1,k-kl1,d)];
+					}
+				}
+			}
+		}
+#pragma omp barrier
+
 		RDouble* PrvPvS = rvPvS[il1][jl1][kl1];
 		
 #pragma omp for nowait
