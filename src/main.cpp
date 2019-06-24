@@ -164,9 +164,6 @@ int main()
 
 	const RDouble4D& q_4d_const_ref = q_4d;
 
-	RDouble3D xfn_area_mul(I,J,K,fortranArray);
-	RDouble3D yfn_area_mul(I,J,K,fortranArray);
-	RDouble3D zfn_area_mul(I,J,K,fortranArray);
 	RDouble4D xmul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim1_sum(I_,J_,K_,D,fortranArray);
@@ -176,9 +173,6 @@ int main()
 	RDouble4D xmul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim3_sum(I_,J_,K_,D,fortranArray);
-	RDouble4D q_4d_xy_conv(I_, J_, K_, M, fortranArray);
-	RDouble4D q_4d_yz_conv(I_, J_, K_, M, fortranArray);
-	RDouble4D q_4d_xz_conv(I_, J_, K_, M, fortranArray);
 	RDouble3D rev_vol_sum_dim1(I0, J0, K0, fortranArray);
 	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
 	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
@@ -186,7 +180,6 @@ int main()
 	RDouble4D* x_dim_sums[2][2][2];
 	RDouble4D* y_dim_sums[2][2][2];
 	RDouble4D* z_dim_sums[2][2][2];
-	RDouble4D* q_4d_convs[2][2][2];
 	RDouble3D* rev_vol_sums[2][2][2];
 
 	end=rdtsc();
@@ -204,9 +197,6 @@ int main()
 	RDouble* Pxmul_dim3_sum = &xmul_dim3_sum[0];
 	RDouble* Pymul_dim3_sum = &ymul_dim3_sum[0];
 	RDouble* Pzmul_dim3_sum = &zmul_dim3_sum[0];
-	RDouble* Pq_4d_xy_conv = &q_4d_xy_conv[0];
-	RDouble* Pq_4d_yz_conv = &q_4d_yz_conv[0];
-	RDouble* Pq_4d_xz_conv = &q_4d_xz_conv[0];
 	RDouble* Prev_vol_sum_dim1 = &rev_vol_sum_dim1[0];
 	RDouble* Prev_vol_sum_dim2 = &rev_vol_sum_dim2[0];
 	RDouble* Prev_vol_sum_dim3 = &rev_vol_sum_dim3[0];
@@ -228,9 +218,6 @@ int main()
 	z_dim_sums[1][0][0] = &zmul_dim1_sum;
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
-	q_4d_convs[1][1][0] = &q_4d_xy_conv;
-	q_4d_convs[0][1][1] = &q_4d_yz_conv;
-	q_4d_convs[1][0][1] = &q_4d_xz_conv;
 	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
 	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
 	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
@@ -328,16 +315,17 @@ int main()
 		const RDouble* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
-		const RDouble* Pq_4d_conv2 = &(*q_4d_convs[il1+il2][jl1+jl2][kl1+kl2])[0];
-		const RDouble* Pq_4d_conv3 = &(*q_4d_convs[il1+il3][jl1+jl3][kl1+kl3])[0];
 		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
 
+		if (nsurf != 1)
+		{
 		for ( int m = mst; m <= med; ++ m )
 		{
 			#pragma omp for nowait  // NOWAIT_BARRIER
-			// #pragma omp for  // NORMAL_BARRIER
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
+			for(int k = 1; k <= nk+1; ++k)
+			{
+				for(int j = 1; j <= nj+1; ++j)
+				{
 					memset((void*)&Pdqdx_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
 					memset((void*)&Pdqdy_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
 					memset((void*)&Pdqdz_4d[A4D(1,j,k,m)], 0, sizeof(RDouble) * (ni + 1));
@@ -345,16 +333,19 @@ int main()
 			}
 		}
 		#pragma omp barrier  // NOWAIT_BARRIER
+		}
 
-		for ( int m = mst; m <= med; ++ m )
+		#pragma omp for nowait  // NOWAIT_BARRIER
+		for(int k = 1; k <= nk+1; ++k) 
 		{
-			#pragma omp for nowait  // NOWAIT_BARRIER
-			// #pragma omp for  // NORMAL_BARRIER
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
+			for(int j = 1; j <= nj+1; ++j)
+			{
+				for ( int m = mst; m <= med; ++ m )
+				{
 					#pragma ivdep
 					#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
+					for(int i = 1; i <= ni+1; ++i)
+					{
 						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
@@ -364,7 +355,8 @@ int main()
 					}
 					#pragma ivdep
 					#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
+					for(int i = 1; i <= ni+1; ++i)
+					{
 						RDouble temp0 = fourth * ( \
 							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[A4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[A4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
@@ -378,7 +370,8 @@ int main()
 					}
 					#pragma ivdep
 					#pragma vector aligned
-					for(int i = 1; i <= ni+1; ++i) {
+					for(int i = 1; i <= ni+1; ++i)
+					{
 						RDouble temp1 = fourth * ( \
 							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[A4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[A4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
@@ -394,15 +387,17 @@ int main()
 		}
 		#pragma omp barrier  // NOWAIT_BARRIER
 
-		for ( int m = mst; m <= med; ++ m )
+		#pragma omp for nowait  // NOWAIT_BARRIER
+		for(int k = 1; k <= nk; ++k)
 		{
-			#pragma omp for nowait  // NOWAIT_BARRIER
-			// #pragma omp for  // NORMAL_BARRIER
-			for(int k = 1; k <= nk; ++k) {
-				for(int j = 1; j <= nj; ++j) {
+			for(int j = 1; j <= nj; ++j)
+			{
+				for ( int m = mst; m <= med; ++ m )
+				{
 					#pragma ivdep
 					#pragma vector aligned
-					for(int i = 1; i <= ni; ++i) {
+					for(int i = 1; i <= ni; ++i)
+					{
 						Pdqdx_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
 						Pdqdy_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
 						Pdqdz_4d[A4D(i,j,k,m)] *= Prev_vol_sums[A03D(i,j,k)];
