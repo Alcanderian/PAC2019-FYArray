@@ -293,17 +293,19 @@ int main()
 
 		Range M(mst,med);
 
-		for ( int m = mst; m <= med; ++ m ) {
+		if ( nsurf != 1 ) { // no need reset first time
+			for ( int m = mst; m <= med; ++ m ) {
 #pragma omp for nowait
-			for(int k = 1; k <= nk+1; ++k) {
-				for(int j = 1; j <= nj+1; ++j) {
-					memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
-					memset(&Pdqdy_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
-					memset(&Pdqdz_4d[LOC4D(1,j,k,m)], 0.0, (ni+1)*sizeof(RDouble));
+				for(int k = 1; k <= nk+1; ++k) {
+					for(int j = 1; j <= nj+1; ++j) {
+						memset(&Pdqdx_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+						memset(&Pdqdy_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+						memset(&Pdqdz_4d[LOC4D(1,j,k,m)], 0, (ni+1)*sizeof(RDouble));
+					}
 				}
 			}
-		}
 #pragma omp barrier
+		}
 		
 		RDouble* PxPxS = xPxS[il1][jl1][kl1];
 		RDouble* PyPyS = yPyS[il1][jl1][kl1];
