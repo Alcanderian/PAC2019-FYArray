@@ -114,6 +114,12 @@ int main()
 	printf("init finished\n");
 	start=rdtsc();
 
+	#define USE_LOCAL_K
+	#ifdef USE_LOCAL_K
+	#warning USE_LOCAL_K
+	#else
+	#warning not USE_LOCAL_K
+	#endif
 
 	// {
 	#define A4D(i0, i1, i2, i3)		((i0) * s0 + (i1) * s1 + (i2) * s2 + (i3) * s3)
@@ -165,6 +171,7 @@ int main()
 
 	const RDouble4D& q_4d_const_ref = q_4d;
 
+	#ifndef USE_LOCAL_K
 	RDouble4D xmul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim1_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim1_sum(I_,J_,K_,D,fortranArray);
@@ -174,6 +181,8 @@ int main()
 	RDouble4D xmul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D ymul_dim3_sum(I_,J_,K_,D,fortranArray);
 	RDouble4D zmul_dim3_sum(I_,J_,K_,D,fortranArray);
+	#endif
+
 	RDouble3D rev_vol_sum_dim1(I0, J0, K0, fortranArray);
 	RDouble3D rev_vol_sum_dim2(I0, J0, K0, fortranArray);
 	RDouble3D rev_vol_sum_dim3(I0, J0, K0, fortranArray);
@@ -188,7 +197,7 @@ int main()
 	cout<<"The allocation elapsed "<<elapsed<<setprecision(8)<<" s"<<endl;
 
 	cout << D.first() << " " << D.last() << endl;
-
+	#ifndef USE_LOCAL_K
 	RDouble* Pxmul_dim1_sum = &xmul_dim1_sum[0];
 	RDouble* Pymul_dim1_sum = &ymul_dim1_sum[0];
 	RDouble* Pzmul_dim1_sum = &zmul_dim1_sum[0];
@@ -198,6 +207,16 @@ int main()
 	RDouble* Pxmul_dim3_sum = &xmul_dim3_sum[0];
 	RDouble* Pymul_dim3_sum = &ymul_dim3_sum[0];
 	RDouble* Pzmul_dim3_sum = &zmul_dim3_sum[0];
+	__assume_aligned(Pxmul_dim1_sum, 512);
+	__assume_aligned(Pymul_dim1_sum, 512);
+	__assume_aligned(Pzmul_dim1_sum, 512);
+	__assume_aligned(Pxmul_dim2_sum, 512);
+	__assume_aligned(Pymul_dim2_sum, 512);
+	__assume_aligned(Pzmul_dim2_sum, 512);
+	__assume_aligned(Pxmul_dim3_sum, 512);
+	__assume_aligned(Pymul_dim3_sum, 512);
+	__assume_aligned(Pzmul_dim3_sum, 512);
+	#endif
 	RDouble* Prev_vol_sum_dim1 = &rev_vol_sum_dim1[0];
 	RDouble* Prev_vol_sum_dim2 = &rev_vol_sum_dim2[0];
 	RDouble* Prev_vol_sum_dim3 = &rev_vol_sum_dim3[0];
@@ -210,6 +229,19 @@ int main()
 	RDouble* Pdqdx_4d = &dqdx_4d[0];
 	RDouble* Pdqdy_4d = &dqdy_4d[0];
 	RDouble* Pdqdz_4d = &dqdz_4d[0];
+	__assume_aligned(Prev_vol_sum_dim1, 512);
+	__assume_aligned(Prev_vol_sum_dim2, 512);
+	__assume_aligned(Prev_vol_sum_dim3, 512);
+	__assume_aligned(Pxfn, 512);
+	__assume_aligned(Pyfn, 512);
+	__assume_aligned(Pzfn, 512);
+	__assume_aligned(Pvol, 512);
+	__assume_aligned(Parea, 512);
+	__assume_aligned(Pq_4d, 512);
+	__assume_aligned(Pdqdx_4d, 512);
+	__assume_aligned(Pdqdy_4d, 512);
+	__assume_aligned(Pdqdz_4d, 512);
+	#ifndef USE_LOCAL_K
 	x_dim_sums[1][0][0] = &xmul_dim1_sum;
 	x_dim_sums[0][1][0] = &xmul_dim2_sum;
 	x_dim_sums[0][0][1] = &xmul_dim3_sum;
@@ -219,6 +251,7 @@ int main()
 	z_dim_sums[1][0][0] = &zmul_dim1_sum;
 	z_dim_sums[0][1][0] = &zmul_dim2_sum;
 	z_dim_sums[0][0][1] = &zmul_dim3_sum;
+	#endif
 	rev_vol_sums[1][0][0] = &rev_vol_sum_dim1;
 	rev_vol_sums[0][1][0] = &rev_vol_sum_dim2;
 	rev_vol_sums[0][0][1] = &rev_vol_sum_dim3;
@@ -231,9 +264,15 @@ int main()
 #define BLOCK_LOW(block_id, total_blocks, n) (((n) / (total_blocks)) * (block_id) + (((n) % (total_blocks) > (block_id)) ? (block_id) : (n) % (total_blocks)))
 #endif
 
-	RDouble inner_arr[nj][THREE_D][ni];
+
+	int arr_dim3_pad = ni + 1;
+	if (arr_dim3_pad % 8 != 0)  // 64B
+	{
+		arr_dim3_pad += 8 - (arr_dim3_pad % 8);
+	}
+	RDouble inner_arr[nj + 1][THREE_D][arr_dim3_pad];
 	typedef decltype(inner_arr) Arrj3i;
-	printf("%d\n", sizeof(Arrj3i));
+	printf("%d %d %d, %d\n", nj + 1, THREE_D, arr_dim3_pad, sizeof(Arrj3i));
 
 	#pragma omp parallel
 	{
@@ -245,22 +284,44 @@ int main()
 	int my_k_cnt = BLOCK_SIZE(tid, nthreads, nk + 1);
 	int my_k_end = my_k_start + my_k_cnt - 1;
 
-	Arrj3i* precomp_x_dim1 = (Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 512);
-	Arrj3i* precomp_x_dim2 = (Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 512);
-	Arrj3i* precomp_x_dim3 = (Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 512);
+	#ifdef USE_LOCAL_K
+	Arrj3i* mem_blk = (Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt * 9, 4096);
+	Arrj3i* precomp_x_dim1 = mem_blk + (my_k_cnt * 0);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_x_dim2 = mem_blk + (my_k_cnt * 1);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_x_dim3 = mem_blk + (my_k_cnt * 2);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
 	Arrj3i* arr_x_dim_sums[2][2][2];
 	arr_x_dim_sums[1][0][0] = precomp_x_dim1;
 	arr_x_dim_sums[0][1][0] = precomp_x_dim2;
 	arr_x_dim_sums[0][0][1] = precomp_x_dim3;
+	Arrj3i* precomp_y_dim1 = mem_blk + (my_k_cnt * 3);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_y_dim2 = mem_blk + (my_k_cnt * 4);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_y_dim3 = mem_blk + (my_k_cnt * 5);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* arr_y_dim_sums[2][2][2];
+	arr_y_dim_sums[1][0][0] = precomp_y_dim1;
+	arr_y_dim_sums[0][1][0] = precomp_y_dim2;
+	arr_y_dim_sums[0][0][1] = precomp_y_dim3;
+	Arrj3i* precomp_z_dim1 = mem_blk + (my_k_cnt * 6);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_z_dim2 = mem_blk + (my_k_cnt * 7);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* precomp_z_dim3 = mem_blk + (my_k_cnt * 8);  //(Arrj3i*)_mm_malloc(sizeof(Arrj3i) * my_k_cnt, 4096);
+	Arrj3i* arr_z_dim_sums[2][2][2];
+	arr_z_dim_sums[1][0][0] = precomp_z_dim1;
+	arr_z_dim_sums[0][1][0] = precomp_z_dim2;
+	arr_z_dim_sums[0][0][1] = precomp_z_dim3;
+	#endif
 
 	for(int k = my_k_start; k <= my_k_end; ++k)
 	{
-		// precomp_x_dim1[k] = (Arrj3i*)_mm_malloc(sizeof(Arrj3i), 4096);
-		// precomp_x_dim2[k] = (Arrj3i*)_mm_malloc(sizeof(Arrj3i), 4096);
-		// precomp_x_dim3[k] = (Arrj3i*)_mm_malloc(sizeof(Arrj3i), 4096);
+		#ifdef USE_LOCAL_K
 		Arrj3i& xdim1_ref = precomp_x_dim1[k - my_k_start];
 		Arrj3i& xdim2_ref = precomp_x_dim2[k - my_k_start];
 		Arrj3i& xdim3_ref = precomp_x_dim3[k - my_k_start];
+		Arrj3i& ydim1_ref = precomp_y_dim1[k - my_k_start];
+		Arrj3i& ydim2_ref = precomp_y_dim2[k - my_k_start];
+		Arrj3i& ydim3_ref = precomp_y_dim3[k - my_k_start];
+		Arrj3i& zdim1_ref = precomp_z_dim1[k - my_k_start];
+		Arrj3i& zdim2_ref = precomp_z_dim2[k - my_k_start];
+		Arrj3i& zdim3_ref = precomp_z_dim3[k - my_k_start];
+		#endif
 		for(int j = 1; j <= nj+1; ++j)
 		{
 			for ( int d = D.first(); d <= D.last(); ++ d )
@@ -271,18 +332,27 @@ int main()
 					RDouble tmp000x = Pxfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
 					RDouble tmp000y = Pyfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
 					RDouble tmp000z = Pzfn[A4D(i,j,k,d)] * Parea[A4D(i,j,k,d)];
-					xdim1_ref[j][d][i] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-					// Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					#ifdef USE_LOCAL_K
+					xdim1_ref[j-1][d][i-1] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					xdim2_ref[j-1][d][i-1] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					xdim3_ref[j-1][d][i-1] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					ydim1_ref[j-1][d][i-1] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					ydim2_ref[j-1][d][i-1] = tmp000y + Pyfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					ydim3_ref[j-1][d][i-1] = tmp000y + Pyfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					zdim1_ref[j-1][d][i-1] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
+					zdim2_ref[j-1][d][i-1] = tmp000z + Pzfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					zdim3_ref[j-1][d][i-1] = tmp000z + Pzfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					#else
+					Pxmul_dim1_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
 					Pymul_dim1_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
 					Pzmul_dim1_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i-1,j,k,d)] * Parea[A4D(i-1,j,k,d)];
-					xdim2_ref[j][d][i] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-					// Pxmul_dim2_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
+					Pxmul_dim2_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
 					Pymul_dim2_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
 					Pzmul_dim2_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j-1,k,d)] * Parea[A4D(i,j-1,k,d)];
-					xdim3_ref[j][d][i] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
-					// Pxmul_dim3_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					Pxmul_dim3_sum[A_4D(i,j,k,d)] = tmp000x + Pxfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
 					Pymul_dim3_sum[A_4D(i,j,k,d)] = tmp000y + Pyfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
 					Pzmul_dim3_sum[A_4D(i,j,k,d)] = tmp000z + Pzfn[A4D(i,j,k-1,d)] * Parea[A4D(i,j,k-1,d)];
+					#endif
 				}
 			}
 		}
@@ -351,11 +421,16 @@ int main()
 			jl3 = 1;
 		}
 
+		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
+		#ifdef USE_LOCAL_K
+		const Arrj3i* arr_x_ds = arr_x_dim_sums[il1][jl1][kl1];
+		const Arrj3i* arr_y_ds = arr_y_dim_sums[il1][jl1][kl1];
+		const Arrj3i* arr_z_ds = arr_z_dim_sums[il1][jl1][kl1];
+		#else
 		const RDouble* Px_dim_sum = &(*x_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Py_dim_sum = &(*y_dim_sums[il1][jl1][kl1])[0];
 		const RDouble* Pz_dim_sum = &(*z_dim_sums[il1][jl1][kl1])[0];
-		const RDouble* Prev_vol_sums = &(*rev_vol_sums[il1][jl1][kl1])[0];
-		const Arrj3i* arr_x_ds = arr_x_dim_sums[il1][jl1][kl1];
+		#endif
 
 		if (nsurf != 1)
 		{
@@ -376,7 +451,11 @@ int main()
 
 		for(int k = my_k_start; k <= my_k_end; ++k)
 		{
+			#ifdef USE_LOCAL_K
 			const Arrj3i& xds_ref = arr_x_ds[k - my_k_start];
+			const Arrj3i& yds_ref = arr_y_ds[k - my_k_start];
+			const Arrj3i& zds_ref = arr_z_ds[k - my_k_start];
+			#endif
 			for(int j = 1; j <= nj+1; ++j)
 			{
 				for ( int m = mst; m <= med; ++ m )
@@ -385,14 +464,21 @@ int main()
 					#pragma vector aligned
 					for(int i = 1; i <= ni+1; ++i)
 					{
-						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j][ns1][i] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
-						// Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						#ifdef USE_LOCAL_K
+						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdy_4d[A4D(i,j,k,m)] -= yds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdz_4d[A4D(i,j,k,m)] -= zds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdx_4d[A4D(i-il1,j-jl1,k-kl1,m)] += xds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdy_4d[A4D(i-il1,j-jl1,k-kl1,m)] += yds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdz_4d[A4D(i-il1,j-jl1,k-kl1,m)] += zds_ref[j-1][ns1][i-1] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						#else
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
-						Pdqdx_4d[A4D(i-il1,j-jl1,k-kl1,m)] += xds_ref[j][ns1][i] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
-						// Pdqdx_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						Pdqdx_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Px_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdy_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Py_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
 						Pdqdz_4d[A4D(i-il1,j-jl1,k-kl1,m)] += Pz_dim_sum[A_4D(i,j,k,ns1)] * Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)];
+						#endif
 					}
 					#pragma ivdep
 					#pragma vector aligned
@@ -401,15 +487,21 @@ int main()
 						RDouble temp0 = fourth * ( \
 							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[A4D(i-il2,j-jl2,k-kl2,m)] + Pq_4d[A4D(i-il1-il2,j-jl1-jl2,k-kl1-kl2,m)] );
-
-						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j][ns2][i] * temp0;
-						// Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						#ifdef USE_LOCAL_K
+						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j-1][ns2][i-1] * temp0;
+						Pdqdy_4d[A4D(i,j,k,m)] -= yds_ref[j-1][ns2][i-1] * temp0;
+						Pdqdz_4d[A4D(i,j,k,m)] -= zds_ref[j-1][ns2][i-1] * temp0;
+						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += xds_ref[j-1][ns2][i-1] * temp0;
+						Pdqdy_4d[A4D(i-il2,j-jl2,k-kl2,m)] += yds_ref[j-1][ns2][i-1] * temp0;
+						Pdqdz_4d[A4D(i-il2,j-jl2,k-kl2,m)] += zds_ref[j-1][ns2][i-1] * temp0;
+						#else
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns2)] * temp0;
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns2)] * temp0;
-						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += xds_ref[j][ns2][i] * temp0;
-						// Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						Pdqdx_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Px_dim_sum[A_4D(i,j,k,ns2)] * temp0;
 						Pdqdy_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Py_dim_sum[A_4D(i,j,k,ns2)] * temp0;
 						Pdqdz_4d[A4D(i-il2,j-jl2,k-kl2,m)] += Pz_dim_sum[A_4D(i,j,k,ns2)] * temp0;
+						#endif
 					}
 					#pragma ivdep
 					#pragma vector aligned
@@ -418,14 +510,21 @@ int main()
 						RDouble temp1 = fourth * ( \
 							Pq_4d[A4D(i,j,k,m)] + Pq_4d[A4D(i-il1,j-jl1,k-kl1,m)] + \
 							Pq_4d[A4D(i-il3,j-jl3,k-kl3,m)] + Pq_4d[A4D(i-il1-il3,j-jl1-jl3,k-kl1-kl3,m)] );
-						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j][ns3][i] * temp1;
-						// Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						#ifdef USE_LOCAL_K
+						Pdqdx_4d[A4D(i,j,k,m)] -= xds_ref[j-1][ns3][i-1] * temp1;
+						Pdqdy_4d[A4D(i,j,k,m)] -= yds_ref[j-1][ns3][i-1] * temp1;
+						Pdqdz_4d[A4D(i,j,k,m)] -= zds_ref[j-1][ns3][i-1] * temp1;
+						Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += xds_ref[j-1][ns3][i-1] * temp1;
+						Pdqdy_4d[A4D(i-il3,j-jl3,k-kl3,m)] += yds_ref[j-1][ns3][i-1] * temp1;
+						Pdqdz_4d[A4D(i-il3,j-jl3,k-kl3,m)] += zds_ref[j-1][ns3][i-1] * temp1;
+						#else
+						Pdqdx_4d[A4D(i,j,k,m)] -= Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
 						Pdqdy_4d[A4D(i,j,k,m)] -= Py_dim_sum[A_4D(i,j,k,ns3)] * temp1;
 						Pdqdz_4d[A4D(i,j,k,m)] -= Pz_dim_sum[A_4D(i,j,k,ns3)] * temp1;
-						Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += xds_ref[j][ns3][i] * temp1;
-						// Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						Pdqdx_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Px_dim_sum[A_4D(i,j,k,ns3)] * temp1;
 						Pdqdy_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Py_dim_sum[A_4D(i,j,k,ns3)] * temp1;
 						Pdqdz_4d[A4D(i-il3,j-jl3,k-kl3,m)] += Pz_dim_sum[A_4D(i,j,k,ns3)] * temp1;
+						#endif
 					}
 				}
 			}
